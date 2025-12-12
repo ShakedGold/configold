@@ -1,0 +1,39 @@
+version: 1
+disable_existing_loggers: False
+
+formatters:
+  json_formatter:
+    (): pythonjsonlogger.jsonlogger.JsonFormatter
+    format: "%(asctime)s %(name)s %(levelname)s %(message)s"
+    rename_fields:
+      levelname: level
+      asctime: time
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    formatter: json_formatter
+    level: INFO
+    stream: ext://sys.stdout
+
+  file:
+    class: logging.FileHandler
+    filename: app.debug.log
+    formatter: json_formatter
+    level: DEBUG
+
+loggers:
+  app:
+    level: DEBUG
+    handlers: [console, file]
+    propagate: False
+
+  apps:
+    level: DEBUG
+    handlers: [console, file]
+    propagate: False
+
+root:
+  level: DEBUG
+  handlers: [console, file]
+  propagate: False
