@@ -1,5 +1,7 @@
 import os
 import logging
+import pathlib
+import shutil
 from pythonjsonlogger import jsonlogger
 from pathlib import PosixPath
 from typing import override
@@ -161,6 +163,8 @@ class InstallableApp(Widget):
             self.logger.warning(
                 f"The binary: {type(self).BINARY_NAME} did not install correctly"
             )
+            if self.full_source_path.exists():
+                shutil.rmtree(self.full_source_path.as_posix())
             return False
 
         self.logger.info("Installed successfully")

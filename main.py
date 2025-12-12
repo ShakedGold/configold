@@ -12,6 +12,7 @@ from apps.nvim import NVIMApp
 from apps.ripgrep import RipGrepApp
 from apps.zellij import ZellijApp
 from apps.zoxide import ZoxideApp
+from apps.zsh import ZshApp
 
 
 class MainApp(App):
@@ -54,6 +55,9 @@ async def main():
 
     rg_app = RipGrepApp()
     _ = await rg_app.install_and_configure()
+
+    zsh_app = ZshApp()
+    _ = await zsh_app.install_and_configure()
 
 
 if __name__ == "__main__":
