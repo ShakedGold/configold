@@ -56,9 +56,9 @@ class InstallableApp(Widget):
     def __init__(
         self,
         label: str,
-        detail: str,
         configuration: Configuration,
         should_install: bool = True,
+        detail: str = "",
     ) -> None:
         super().__init__()
         self.label: str = label
