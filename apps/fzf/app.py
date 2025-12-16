@@ -1,9 +1,7 @@
 from pathlib import PosixPath
-from typing import override
 
 from apps import consts
 from apps.tarball import TarballApp
-from configuration import Configuration, ConfigurationData
 
 
 class FZFApp(TarballApp):
@@ -19,7 +17,3 @@ class FZFApp(TarballApp):
             detail="The fuzzy finder will find you anywhere",
             link_path=PosixPath("fzf"),
         )
-
-    @override
-    async def configure(self, config: Configuration) -> bool:
-        return True

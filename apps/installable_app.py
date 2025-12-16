@@ -1,10 +1,8 @@
 import io
 import os
 import logging
-import pathlib
 import shutil
 import sys
-from pythonjsonlogger import jsonlogger
 from pathlib import PosixPath
 from typing import override
 
@@ -206,6 +204,6 @@ class InstallableApp(Widget):
         if self.configuration is None:
             return did_install
 
-        did_configure = await self.configure(self.configuration)
+        did_configure = self.configuration.config()
 
         return did_install and did_configure

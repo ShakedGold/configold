@@ -1,5 +1,4 @@
 from pathlib import PosixPath
-from typing import override
 
 from apps import consts
 from apps.tarball import TarballApp
@@ -20,7 +19,3 @@ class ZoxideApp(TarballApp):
             configuration=Configuration(config_data=ConfigurationData()),
             link_path=PosixPath("zoxide"),
         )
-
-    @override
-    async def configure(self, config: Configuration) -> bool:
-        return True

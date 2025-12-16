@@ -1,14 +1,10 @@
 from pprint import pformat
 import shutil
-import sys
 from pydantic import Field
 from pathlib import PosixPath
 from typing import TextIO, override
 
 from textual.app import ComposeResult
-from textual.containers import Horizontal, Vertical
-from textual.widget import Widget
-from textual.widgets import Header, Label, Switch
 from configuration.widget import ConfigurationWidget
 from configuration.data import ConfigurationData
 
@@ -108,17 +104,11 @@ class ZshConfigWidget(ConfigurationWidget):
             )
             return
 
-        self.config.exports = {} if not event.value else self.config.exports
-        self.logger.info(f"CONFIG CHANGED: {self.config.exports}")
-
+    @override
     def compose(self) -> ComposeResult:
         if not isinstance(self.config, ZshConfigData):
             self.logger.fatal(
                 f"Wrong config data type: {type(self.config)}, should have been ZshConfigData"
             )
-            return
 
-        with Vertical():
-            with Horizontal():
-                yield Switch(True)
-                yield Label("Exports")
+        yield Static()

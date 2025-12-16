@@ -1,9 +1,7 @@
 from pathlib import PosixPath
-from typing import override
 
 from apps import consts
 from apps.tarball import TarballApp
-from configuration import Configuration, ConfigurationData
 
 
 class RipGrepApp(TarballApp):
@@ -20,7 +18,3 @@ class RipGrepApp(TarballApp):
             link_path=PosixPath("rg"),
             strip_components=True,
         )
-
-    @override
-    async def configure(self, config: Configuration) -> bool:
-        return True

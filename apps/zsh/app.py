@@ -1,5 +1,4 @@
 from pathlib import PosixPath
-from typing import override
 
 from apps import consts
 from apps.tarball import TarballApp
@@ -31,7 +30,3 @@ class ZshApp(TarballApp):
     @property
     def config_path(self) -> PosixPath:
         return PosixPath(self.home_path, type(self).CONFIG_FILE_NAME)
-
-    @override
-    async def _configure(self, config: Configuration) -> bool:
-        return config.config()

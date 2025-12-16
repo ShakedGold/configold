@@ -1,5 +1,4 @@
 from pathlib import PosixPath
-from typing import override
 
 from apps import consts
 from apps.tarball import TarballApp
@@ -21,7 +20,3 @@ class NVIMApp(TarballApp):
             link_path=PosixPath("bin", "nvim"),
             strip_components=True,
         )
-
-    @override
-    async def configure(self, config: Configuration) -> bool:
-        return True

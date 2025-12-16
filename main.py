@@ -21,6 +21,12 @@ from apps.zoxide import ZoxideApp
 from apps.zsh import ZshApp
 
 
+def setup_logger():
+    with open("logger.yml", "r") as f:
+        config: dict[str, Any] = yaml.safe_load(f.read())
+        logging.config.dictConfig(config)
+
+
 class MainApp(App):
     BINDINGS: list[BindingType] = [
         Binding("q", "quit", "Quit the application"),
@@ -64,12 +70,6 @@ class MainApp(App):
             _ = await app.install_and_configure()
 
         sys.exit()
-
-
-def setup_logger():
-    with open("logger.yml", "r") as f:
-        config: dict[str, Any] = yaml.safe_load(f.read())
-        logging.config.dictConfig(config)
 
 
 async def main():
