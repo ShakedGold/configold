@@ -18,7 +18,7 @@ class ZshApp(TarballApp):
 
     def __init__(self) -> None:
         super().__init__(
-            detail="The simple, modern shell that is posix complient",
+            detail="The simple, modern shell that is posix compliant",
             configuration=Configuration(
                 config_data=ZshConfigData(
                     config_path=self.config_path, backup_path=self.backup_directory_path
