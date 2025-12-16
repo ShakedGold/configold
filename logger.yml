@@ -25,15 +25,15 @@ handlers:
 loggers:
   app:
     level: DEBUG
-    handlers: [console, file]
+    handlers: [file]
     propagate: False
 
   apps:
     level: DEBUG
-    handlers: [console, file]
+    handlers: [file]
     propagate: False
 
 root:
   level: DEBUG
-  handlers: [console, file]
+  handlers: [file]
   propagate: False

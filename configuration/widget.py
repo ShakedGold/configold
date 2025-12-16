@@ -1,31 +1,38 @@
 import logging
-from pydantic.main import BaseModel
-from textual.widget import Widget
+from textual.visual import VisualType
+from textual.widgets import Static
+
+from configuration.data import ConfigurationData
 
 
-class ConfigurationWidget(Widget):
+class ConfigurationWidget(Static):
     """
     Renders the configuration
     """
 
     def __init__(
         self,
-        *children: Widget,
+        content: VisualType = "",
+        *,
+        expand: bool = False,
+        shrink: bool = False,
+        markup: bool = True,
         name: str | None = None,
         id: str | None = None,
         classes: str | None = None,
         disabled: bool = False,
-        markup: bool = True,
     ) -> None:
         super().__init__(
-            *children,
+            content,
+            expand=expand,
+            shrink=shrink,
+            markup=markup,
             name=name,
             id=id,
             classes=classes,
             disabled=disabled,
-            markup=markup,
         )
-
         self.logger: logging.Logger = logging.getLogger(
             f"{__name__}.{type(self).__name__}"
         )
+        self.config: ConfigurationData = ConfigurationData()

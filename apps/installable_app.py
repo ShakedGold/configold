@@ -56,15 +56,15 @@ class InstallableApp(Widget):
     def __init__(
         self,
         label: str,
-        configuration: Configuration,
         should_install: bool = True,
         detail: str = "",
+        configuration: Configuration | None = None,
     ) -> None:
         super().__init__()
         self.label: str = label
         self.detail: str = detail
         self.should_install = should_install
-        self.configuration: Configuration = configuration
+        self.configuration: Configuration | None = configuration
 
         self.styles.max_height = 20
         self.styles.height = "auto"
@@ -143,8 +143,11 @@ class InstallableApp(Widget):
             Label(self.detail, id="detail"),
             id="evenly_spaced",
         )
-        with Collapsible(title="Configuration", id="config"):
-            yield Label("CONFIG")
+
+        if self.configuration is None or self.configuration.widget is None:
+            return
+
+        yield Collapsible(self.configuration.widget, title="Configuration", id="config")
 
     def on_switch_changed(self, event: Switch.Changed) -> None:
         if event.switch.id == "should_install":
@@ -199,6 +202,10 @@ class InstallableApp(Widget):
 
     async def install_and_configure(self) -> bool:
         did_install = await self.install()
+
+        if self.configuration is None:
+            return did_install
+
         did_configure = await self.configure(self.configuration)
 
         return did_install and did_configure

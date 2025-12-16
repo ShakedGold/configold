@@ -17,7 +17,6 @@ class RipGrepApp(TarballApp):
     def __init__(self) -> None:
         super().__init__(
             detail="The fastest grepping in the west",
-            configuration=Configuration(config_data=ConfigurationData()),
             link_path=PosixPath("rg"),
             strip_components=True,
         )

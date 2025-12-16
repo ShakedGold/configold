@@ -19,10 +19,10 @@ class TarballApp(InstallableApp):
 
     def __init__(
         self,
-        configuration: Configuration,
         link_path: PosixPath,
         detail: str = "",
         strip_components: bool = False,
+        configuration: Configuration | None = None,
     ) -> None:
         super().__init__(
             label=type(self).BINARY_NAME,

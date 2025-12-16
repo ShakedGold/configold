@@ -1,14 +1,19 @@
+import asyncio
 import logging
 import logging.config
-from types import CoroutineType
+import sys
+from textual.driver import Driver
+from textual.types import CSSPathType
+from textual.widgets import Button, Header
 import yaml
-import asyncio
-from typing import Any, override
+from typing import Any, Type, override
 from textual.app import App, ComposeResult
 from textual.binding import Binding, BindingType
 
+from apps.eza import EzaApp
 from apps.fd import FDApp
 from apps.fzf import FZFApp
+from apps.installable_app import InstallableApp
 from apps.nvim import NVIMApp
 from apps.ripgrep import RipGrepApp
 from apps.zellij import ZellijApp
@@ -22,9 +27,43 @@ class MainApp(App):
         Binding("ctrl+c", "quit", "Quit the application"),
     ]
 
+    def __init__(
+        self,
+        driver_class: Type[Driver] | None = None,
+        css_path: CSSPathType | None = None,
+        watch_css: bool = False,
+        ansi_color: bool = False,
+    ):
+        super().__init__(driver_class, css_path, watch_css, ansi_color)
+
+        self.apps: list[InstallableApp] = [
+            ZshApp(),
+            ZellijApp(),
+            NVIMApp(),
+            FDApp(),
+            FZFApp(),
+            RipGrepApp(),
+            ZoxideApp(),
+            EzaApp(),
+        ]
+
     @override
     def compose(self) -> ComposeResult:
-        raise NotImplementedError
+        yield Header(show_clock=True, name="configold")
+        for app in self.apps:
+            yield app
+
+        yield Button("DONE", id="finish")
+
+    async def on_button_pressed(self, event: Button.Pressed):
+        button: Button = event.button
+        if button.id != "finish":
+            return
+
+        for app in self.apps:
+            _ = await app.install_and_configure()
+
+        sys.exit()
 
 
 def setup_logger():
@@ -34,35 +73,10 @@ def setup_logger():
 
 
 async def main():
-    # app = MainApp()
-    # app.run()
-
     setup_logger()
 
-    app_installers: list[CoroutineType[Any, Any, bool]] = []
-
-    # zellij_app = ZellijApp()
-    # app_installers.append(zellij_app.install_and_configure())
-
-    # nvim_app = NVIMApp()
-    # app_installers.append(nvim_app.install_and_configure())
-
-    # fzf_app = FZFApp()
-    # app_installers.append(fzf_app.install_and_configure())
-
-    # zoxide_app = ZoxideApp()
-    # app_installers.append(zoxide_app.install_and_configure())
-
-    # fd_app = FDApp()
-    # app_installers.append(fd_app.install_and_configure())
-
-    # rg_app = RipGrepApp()
-    # app_installers.append(rg_app.install_and_configure())
-
-    zsh_app = ZshApp()
-    app_installers.append(zsh_app.install_and_configure())
-
-    _ = await asyncio.gather(*app_installers)
+    app = MainApp()
+    await app.run_async()
 
 
 if __name__ == "__main__":

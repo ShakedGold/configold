@@ -6,20 +6,18 @@ from apps.tarball import TarballApp
 from configuration import Configuration, ConfigurationData
 
 
-class FDApp(TarballApp):
+class FZFApp(TarballApp):
     """
-    Installer for fd: `find` replacer
+    Installer for the fuzzy finder called fzf
     """
 
-    BINARY_NAME: str = "fd"
+    BINARY_NAME: str = "fzf"
     CWD: str = consts.BINARIES_PATH
 
     def __init__(self) -> None:
         super().__init__(
-            detail="An actually usable find that follow f-cking gnu",
-            configuration=Configuration(config_data=ConfigurationData()),
-            link_path=PosixPath("fd"),
-            strip_components=True,
+            detail="The fuzzy finder will find you anywhere",
+            link_path=PosixPath("fzf"),
         )
 
     @override
