@@ -3,7 +3,7 @@ from typing import override
 
 from apps import consts
 from apps.tarball import TarballApp
-from configuration import Configuration
+from configuration import Configuration, ConfigurationData
 
 
 class RipGrepApp(TarballApp):
@@ -17,11 +17,11 @@ class RipGrepApp(TarballApp):
     def __init__(self) -> None:
         super().__init__(
             detail="The fastest grepping in the west",
-            configuration=Configuration(),
+            configuration=Configuration(config_data=ConfigurationData()),
             link_path=PosixPath("rg"),
             strip_components=True,
         )
 
     @override
-    async def configure(self) -> bool:
+    async def configure(self, config: Configuration) -> bool:
         return True

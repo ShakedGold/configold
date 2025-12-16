@@ -3,7 +3,7 @@ from typing import override
 
 from apps import consts
 from apps.tarball import TarballApp
-from configuration import Configuration
+from configuration import Configuration, ConfigurationData
 
 
 class ZoxideApp(TarballApp):
@@ -17,10 +17,10 @@ class ZoxideApp(TarballApp):
     def __init__(self) -> None:
         super().__init__(
             detail="This will change how you enter directories... (it's cool I promise)",
-            configuration=Configuration(),
+            configuration=Configuration(config_data=ConfigurationData()),
             link_path=PosixPath("zoxide"),
         )
 
     @override
-    async def configure(self) -> bool:
+    async def configure(self, config: Configuration) -> bool:
         return True

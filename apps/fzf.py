@@ -3,7 +3,7 @@ from typing import override
 
 from apps import consts
 from apps.tarball import TarballApp
-from configuration import Configuration
+from configuration import Configuration, ConfigurationData
 
 
 class FZFApp(TarballApp):
@@ -17,10 +17,10 @@ class FZFApp(TarballApp):
     def __init__(self) -> None:
         super().__init__(
             detail="The fuzzy finder will find you anywhere",
-            configuration=Configuration(),
+            configuration=Configuration(config_data=ConfigurationData()),
             link_path=PosixPath("fzf"),
         )
 
     @override
-    async def configure(self) -> bool:
+    async def configure(self, config: Configuration) -> bool:
         return True

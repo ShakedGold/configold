@@ -110,7 +110,3 @@ class TarballApp(InstallableApp):
             return False
 
         return True
-
-    @override
-    async def configure(self) -> bool:
-        return True

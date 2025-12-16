@@ -3,7 +3,7 @@ from typing import override
 
 from apps import consts
 from apps.tarball import TarballApp
-from configuration import Configuration
+from configuration import Configuration, ConfigurationData
 
 
 class ZellijApp(TarballApp):
@@ -17,10 +17,10 @@ class ZellijApp(TarballApp):
     def __init__(self) -> None:
         super().__init__(
             detail="The new terminal multiplexer on the block",
-            configuration=Configuration(),
+            configuration=Configuration(config_data=ConfigurationData()),
             link_path=PosixPath("zellij"),
         )
 
     @override
-    async def configure(self) -> bool:
+    async def configure(self, config: Configuration) -> bool:
         return True

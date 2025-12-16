@@ -1,7 +1,9 @@
+import io
 import os
 import logging
 import pathlib
 import shutil
+import sys
 from pythonjsonlogger import jsonlogger
 from pathlib import PosixPath
 from typing import override
@@ -99,13 +101,23 @@ class InstallableApp(Widget):
     def full_target_path(self):
         return PosixPath(self.full_target_directory_path, type(self).BINARY_NAME)
 
+    @property
+    def backup_directory_path(self) -> PosixPath:
+        return PosixPath(self.home_path, ".local", "backups")
+
     def _validate_binaries(self):
+        is_any_binary_missing: bool = False
+
         for binary_name in type(self).BINARIES.keys():
             binary_path = utils.find_executable(binary_name)
             if binary_path is None:
-                raise ValueError("BINARY NOT FOUND: ", binary_name)
+                self.logger.fatal(f"BINARY NOT FOUND: {binary_name}")
+                is_any_binary_missing = True
 
             type(self).BINARIES[binary_name] = binary_path
+
+        if is_any_binary_missing:
+            sys.exit(1)
 
     def _log_paths(self):
         self.logger.debug(f"home_path: {self.home_path}")
@@ -115,6 +127,7 @@ class InstallableApp(Widget):
             f"full_target_directory_path: {self.full_target_directory_path}"
         )
         self.logger.debug(f"full_target_path: {self.full_target_path}")
+        self.logger.debug(f"backup_directory_path: {self.backup_directory_path}")
 
     @override
     def compose(self) -> ComposeResult:
@@ -170,12 +183,22 @@ class InstallableApp(Widget):
         self.logger.info("Installed successfully")
         return True
 
-    async def configure(self) -> bool:
-        self.logger.info("Configuring application")
+    async def _configure(self, config: Configuration) -> bool:
         raise NotImplementedError
+
+    async def configure(self, config: Configuration) -> bool:
+        self.logger.info("Configuring application")
+        result: bool = await self._configure(config)
+
+        if not result:
+            self.logger.error("Failed to configure application")
+            return False
+
+        self.logger.info("Successfully configured application")
+        return True
 
     async def install_and_configure(self) -> bool:
         did_install = await self.install()
-        did_configure = await self.configure()
+        did_configure = await self.configure(self.configuration)
 
         return did_install and did_configure
