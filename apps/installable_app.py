@@ -201,6 +201,7 @@ class InstallableApp(Widget):
     async def install_and_configure(self) -> bool:
         did_install = await self.install()
 
+        self.logger.info("Configuration: %s", self.configuration)
         if self.configuration is None:
             return did_install
 

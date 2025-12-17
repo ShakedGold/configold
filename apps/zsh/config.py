@@ -5,6 +5,7 @@ from pathlib import PosixPath
 from typing import TextIO, override
 
 from textual.app import ComposeResult
+from textual.widgets import Label, Static, Switch
 from configuration.widget import ConfigurationWidget
 from configuration.data import ConfigurationData
 

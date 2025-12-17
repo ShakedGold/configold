@@ -16,7 +16,6 @@ class NVIMApp(TarballApp):
     def __init__(self) -> None:
         super().__init__(
             detail="THE BEST EDITOR ON THE PLANET",
-            configuration=Configuration(config_data=ConfigurationData()),
             link_path=PosixPath("bin", "nvim"),
             strip_components=True,
         )

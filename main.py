@@ -69,7 +69,7 @@ class MainApp(App):
         for app in self.apps:
             _ = await app.install_and_configure()
 
-        sys.exit()
+        self.exit()
 
 
 async def main():

@@ -16,6 +16,5 @@ class ZellijApp(TarballApp):
     def __init__(self) -> None:
         super().__init__(
             detail="The new terminal multiplexer on the block",
-            configuration=Configuration(config_data=ConfigurationData()),
             link_path=PosixPath("zellij"),
         )
