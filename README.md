@@ -3,6 +3,7 @@
 
 ### Configure your shell easily with an easy to use user interface
 ![textual-ui.png](./media/textual-ui.png)
+![textual-ui-aliases-list.png](./media/textual-ui-aliases-list.png)
 
 An easy to use user interface to easily configure your setup.
 
