@@ -1,5 +1,5 @@
 # CONFIGOLD
-## Like gold, you configuration should be precious but malleable
+Like gold, you configuration should be precious but malleable
 
 ### Configure your shell easily with an easy to use user interface
 ![textual-ui.png](./media/textual-ui.png)
