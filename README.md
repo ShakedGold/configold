@@ -24,7 +24,6 @@ from utils import setup_logger
 
 
 zsh_config = ZshConfigData(
-    backup_directory_path=PosixPath("/home/shaked/.local/backups/"),
     aliases=dict(configold='echo "THE BEST CONFIGURATION LIBRARY"'),
 )
 zsh = ZshApp(zsh_config)
@@ -42,7 +41,6 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-
 ```
 
 The output `.zshrc`:
