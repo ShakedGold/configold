@@ -5,6 +5,8 @@
 ![textual-ui.png](./media/textual-ui.png)
 ![textual-ui-aliases-list.png](./media/textual-ui-aliases-list.png)
 
+**All in the shell!**
+
 An easy to use user interface to easily configure your setup.
 
 Don't like to change defaults? just nextify that shi- and get a great configuration by default!
