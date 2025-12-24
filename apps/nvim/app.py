@@ -2,7 +2,6 @@ from pathlib import PosixPath
 
 from apps import consts
 from apps.tarball import TarballApp
-from configuration import Configuration, ConfigurationData
 
 
 class NVIMApp(TarballApp):

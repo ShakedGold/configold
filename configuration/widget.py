@@ -1,11 +1,15 @@
+# pyright: reportAttributeAccessIssue=false
 import logging
+from typing import Generic, TypeVar
 from textual.visual import VisualType
 from textual.widgets import Static
 
 from configuration.data import ConfigurationData
 
+T = TypeVar("T", bound=ConfigurationData)
 
-class ConfigurationWidget(Static):
+
+class ConfigurationWidget(Static, Generic[T]):
     """
     Renders the configuration
     """
@@ -35,4 +39,5 @@ class ConfigurationWidget(Static):
         self.logger: logging.Logger = logging.getLogger(
             f"{__name__}.{type(self).__name__}"
         )
-        self.config: ConfigurationData = ConfigurationData()
+        #
+        self.config: T = ConfigurationData()

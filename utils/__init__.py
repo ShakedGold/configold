@@ -1,4 +1,4 @@
-from .evenly_spaced import EvenlySpaced
 from .find_executable import find_executable
+from .logger import setup_logger
 
-__all__ = ["EvenlySpaced", "find_executable"]
+__all__ = ["find_executable", "setup_logger"]

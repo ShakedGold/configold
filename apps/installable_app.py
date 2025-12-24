@@ -1,19 +1,19 @@
-import io
 import os
 import logging
 import shutil
 import sys
+
 from pathlib import PosixPath
 from typing import override
 
+import utils
+
+from configuration import Configuration
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal
 from textual.reactive import reactive
 from textual.widget import Widget
 from textual.widgets import Collapsible, Label, Switch
-
-from configuration import Configuration
-import utils
 
 
 class InstallableApp(Widget):
@@ -102,6 +102,10 @@ class InstallableApp(Widget):
     @property
     def backup_directory_path(self) -> PosixPath:
         return PosixPath(self.home_path, ".local", "backups")
+
+    @property
+    def resources_directory_path(self) -> PosixPath:
+        return PosixPath(self.full_source_directory, "..", "resources")
 
     def _validate_binaries(self):
         is_any_binary_missing: bool = False

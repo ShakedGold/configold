@@ -13,20 +13,17 @@ class ZshApp(TarballApp):
 
     BINARY_NAME: str = "zsh"
     CWD: str = consts.BINARIES_PATH
-    CONFIG_FILE_NAME: str = ".zshrc"
 
-    def __init__(self) -> None:
+    def __init__(self, configuration: ZshConfigData | None = None) -> None:
         super().__init__(
             detail="The simple, modern shell that is posix compliant",
             configuration=Configuration(
                 config_data=ZshConfigData(
-                    config_path=self.config_path, backup_path=self.backup_directory_path
-                ),
+                    backup_directory_path=self.backup_directory_path
+                )
+                if configuration is None
+                else configuration,
                 widget=ZshConfigWidget(),
             ),
             link_path=PosixPath("bin", "zsh"),
         )
-
-    @property
-    def config_path(self) -> PosixPath:
-        return PosixPath(self.home_path, type(self).CONFIG_FILE_NAME)

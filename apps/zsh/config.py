@@ -1,18 +1,31 @@
+from enum import StrEnum
+import json
+import os
 from pprint import pformat
 import shutil
-from pydantic import Field
+from pydantic import Field, model_validator
 from pathlib import PosixPath
-from typing import TextIO, override
+from typing import ClassVar, TextIO, override
 
+from textual import on
 from textual.app import ComposeResult
-from textual.widgets import Label, Static, Switch
+from textual.containers import Horizontal
+from textual.widgets import Button, Label
+from components.dict_modal import DictModal
 from configuration.widget import ConfigurationWidget
 from configuration.data import ConfigurationData
 
 
+class ZshPluginManager(StrEnum):
+    ZINIT = "zinit"
+
+
 class ZshConfigData(ConfigurationData):
-    config_path: PosixPath
-    backup_path: PosixPath
+    CONFIG_FILE_NAME: ClassVar[str] = ".zshrc"
+
+    backup_directory_path: PosixPath = Field(
+        default_factory=lambda: PosixPath(os.getenv("HOME", "~"), ".local", "backups")
+    )
     aliases: dict[str, str] = Field(
         default=dict(
             l="ls -lah",
@@ -28,33 +41,48 @@ class ZshConfigData(ConfigurationData):
             g="git",
         )
     )
+    plugin_manager: ZshPluginManager = Field(default=ZshPluginManager.ZINIT)
 
     exports: dict[str, str] = Field(default=dict(EDITOR="`which nvim`"))
 
-    def _backup_config(self) -> None:
-        self.backup_path.mkdir(parents=True, exist_ok=True)
+    @property
+    def home_path(self):
+        home_path = os.getenv("HOME")
+        if home_path is None:
+            home_path = "~"
+        return home_path
 
-        target_backup_path: str = PosixPath(
-            self.backup_path, self.config_path.name
+    @property
+    def config_path(self) -> PosixPath:
+        return PosixPath(self.home_path, type(self).CONFIG_FILE_NAME)
+
+    def _backup_config(self) -> None:
+        self.backup_directory_path.mkdir(parents=True, exist_ok=True)
+
+        target_backup_directory_path: str = PosixPath(
+            self.backup_directory_path, self.config_path.name
         ).as_posix()
 
         _ = shutil.copy(
             self.config_path,
-            target_backup_path,
+            target_backup_directory_path,
         )
         self.logger.debug(
-            f"Backed up the config ([{self.config_path}] to [{self.backup_path}])"
+            f"Backed up the config ([{self.config_path}] to [{self.backup_directory_path}])"
         )
+
+    def _escape_string(self, value: str) -> str:
+        return json.dumps(value)[1:-1]
 
     def _config_aliases(self, config_file: TextIO) -> None:
         if len(self.aliases.keys()) == 0:
             return
 
         _ = config_file.write(
-            """\n# This is the aliases, they define 'commands' that will point to other commands themself, for example: the `g` alias is just an alias to `git`\n"""
+            """\n# This is the aliases, they define 'commands' that will point to other commands themself, for example: A `g` alias is just an alias to `git`\n"""
         )
         aliases_raw: str = "\n".join(
-            f'alias {alias_name}="{alias_value}"'
+            f'alias {alias_name}="{self._escape_string(alias_value)}"'
             for alias_name, alias_value in self.aliases.items()
         )
         _ = config_file.write(aliases_raw)
@@ -71,13 +99,18 @@ class ZshConfigData(ConfigurationData):
         )
 
         exports_raw: str = "\n".join(
-            f'export {export_name}="{export_value}"'
+            f'export {export_name}="{self._escape_string(export_value)}"'
             for export_name, export_value in self.exports.items()
         )
         _ = config_file.write(exports_raw)
         _ = config_file.write("\n\n")
 
         self.logger.debug("Configured exports %s", pformat(self.aliases))
+
+    def _install_plugin_manager(self, config_file: TextIO) -> None:
+        if self.plugin_manager == ZshPluginManager.ZINIT:
+            # shutil.copy()
+            pass
 
     @override
     def config(self) -> bool:
@@ -93,23 +126,48 @@ class ZshConfigData(ConfigurationData):
         with open(self.config_path, "a+") as config_file:
             self._config_exports(config_file)
             self._config_aliases(config_file)
+            # self._install_plugin_manager(config_file)
 
         return True
 
 
-class ZshConfigWidget(ConfigurationWidget):
-    def on_switch_changed(self, event: Switch.Changed) -> None:
-        if not isinstance(self.config, ZshConfigData):
-            self.logger.fatal(
-                f"Wrong config data type: {type(self.config)}, should have been ZshConfigData"
-            )
-            return
+class ZshConfigWidget(ConfigurationWidget[ZshConfigData]):
+    DEFAULT_CSS: str = """
+    ZshConfigWidget > Horizontal {
+        height: auto;
+        width: auto;
+        align: center middle;
+    }
+
+    ZshConfigWidget > Horizontal > Label {
+        height: 100%;
+        content-align: left middle;
+    }
+
+    ZshConfigWidget > Horizontal > * {
+        width: 1fr;
+    }
+
+    ZshConfigWidget > Horizontal > Button {
+        max-width: 30;
+        margin: 0 2;
+    }
+    """
 
     @override
     def compose(self) -> ComposeResult:
-        if not isinstance(self.config, ZshConfigData):
-            self.logger.fatal(
-                f"Wrong config data type: {type(self.config)}, should have been ZshConfigData"
-            )
+        with Horizontal():
+            yield Label("Aliases")
+            yield Button("Open Aliases List", id="alias-button")
 
-        yield Static()
+        with Horizontal():
+            yield Label("Exports")
+            yield Button("Open Exports List", id="export-button")
+
+    @on(Button.Pressed, "#alias-button")
+    def open_aliases_list_modal(self) -> None:
+        _ = self.app.push_screen(DictModal(self.config.aliases, name="Aliases"))
+
+    @on(Button.Pressed, "#export-button")
+    def open_export_list_modal(self) -> None:
+        _ = self.app.push_screen(DictModal(self.config.exports, name="Exports"))
