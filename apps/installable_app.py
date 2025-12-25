@@ -64,7 +64,6 @@ class InstallableApp(Widget):
         self.should_install = should_install
         self.configuration: Configuration | None = configuration
 
-        self.styles.max_height = 20
         self.styles.height = "auto"
         self.styles.border = ("round", "white")
 

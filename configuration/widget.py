@@ -14,6 +14,12 @@ class ConfigurationWidget(Static, Generic[T]):
     Renders the configuration
     """
 
+    DEFAULT_CSS: str = '''
+    ConfigurationWidget > Horizontal {
+        margin: 1 0;
+    }
+    '''
+
     def __init__(
         self,
         content: VisualType = "",

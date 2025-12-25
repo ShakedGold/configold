@@ -5,6 +5,9 @@ Like gold, you configuration should be precious but malleable
 ![textual-ui.png](./media/textual-ui.png)
 ![textual-ui-aliases-list.png](./media/textual-ui-aliases-list.png)
 
+### A beautifull UI
+![showcase-zsh.mp4](./media/showcase-zsh.mp4)
+
 **All in the shell!**
 
 An easy to use user interface to easily configure your setup.
