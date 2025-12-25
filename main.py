@@ -17,7 +17,6 @@ from apps.zoxide import ZoxideApp
 from apps.zsh import ZshApp
 from utils import setup_logger
 
-
 class MainApp(App):
     BINDINGS: list[BindingType] = [
         Binding("q", "quit", "Quit the application"),
@@ -71,7 +70,7 @@ class MainApp(App):
 
 
 async def main():
-    setup_logger()
+    setup_logger(console=False)
 
     app = MainApp()
     await app.run_async()
