@@ -6,7 +6,7 @@ Like gold, you configuration should be precious but malleable
 ![textual-ui-aliases-list.png](./media/textual-ui-aliases-list.png)
 
 ### A beautifull UI
-![showcase-zsh.mp4](./media/showcase-zsh.mp4)
+![showcase-zsh.gif](./media/showcase-zsh.gif)
 
 **All in the shell!**
 
