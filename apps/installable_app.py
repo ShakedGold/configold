@@ -190,9 +190,15 @@ class InstallableApp(Widget):
     async def _configure(self, config: Configuration) -> bool:
         raise NotImplementedError
 
-    async def configure(self, config: Configuration) -> bool:
+    def configure(self, config: Configuration | None = None) -> bool:
+        configuration = self.configuration if config is None else config
+
+        if configuration is None:
+            # There is no valid configuration set, so just return as if succeded to configure
+            return True
+
         self.logger.info("Configuring application")
-        result: bool = await self._configure(config)
+        result: bool = configuration.config()
 
         if not result:
             self.logger.error("Failed to configure application")
@@ -204,10 +210,10 @@ class InstallableApp(Widget):
     async def install_and_configure(self) -> bool:
         did_install = await self.install()
 
-        self.logger.info("Configuration: %s", self.configuration)
         if self.configuration is None:
+            self.logger.info("Configuration: %s", self.configuration)
             return did_install
 
-        did_configure = self.configuration.config()
+        did_configure = self.configure(self.configuration)
 
         return did_install and did_configure

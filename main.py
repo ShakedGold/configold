@@ -64,7 +64,10 @@ class MainApp(App):
             return
 
         for app in self.apps:
-            _ = await app.install_and_configure()
+            _ = await app.install()
+
+        for app in self.apps:
+            _ = app.configure()
 
         self.exit()
 
