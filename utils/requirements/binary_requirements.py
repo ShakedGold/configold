@@ -15,9 +15,10 @@ class BinaryRequirement(Generic[T]):
     Used for enforcing requirements that rely on specific binaries to be in the PATH, intended to be used as a string
     """
 
-    def __init__(self, value: T, binaries: list[str]) -> None:
+    def __init__(self, value: T, binaries: list[str], must_have: bool = True) -> None:
         self.value: T = value
         self.binaries: list[str] = binaries
+        self.must_have: bool = must_have
         self.logger: logging.Logger = logging.getLogger(
             f"{__name__}.{type(self).__name__}"
         )
@@ -37,10 +38,14 @@ class BinaryRequirement(Generic[T]):
         if len(missing_binaries) == 0:
             return
 
-        self.logger.fatal(
+        missing_message: str = (
             f"Missing binaries for: {self.value}, the missing binaries are: {", ".join(missing_binaries)}"
         )
-        sys.exit(1)
+        if self.must_have:
+            self.logger.fatal(missing_message)
+            sys.exit(1)
+
+        self.logger.warning(missing_message)
 
     @classmethod
     def __get_pydantic_core_schema__(
