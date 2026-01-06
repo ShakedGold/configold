@@ -178,7 +178,7 @@ class InstallableApp(Widget):
         did_install = await self._install()
         if not did_install:
             self.logger.warning(
-                f"The binary: {type(self).BINARY_NAME} did not install correctly"
+                f"The binary: {type(self).BINARY_NAME} did not install correctly (is it already installed?)"
             )
             if self.full_source_path.exists():
                 shutil.rmtree(self.full_source_path.as_posix())

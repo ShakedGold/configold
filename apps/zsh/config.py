@@ -1,30 +1,38 @@
-from abc import ABC, abstractmethod
-from enum import StrEnum
 import json
 import os
-from pprint import pformat
 import shutil
-from pydantic import Field
+from abc import ABC, abstractmethod
+from enum import StrEnum
 from pathlib import PosixPath
+from pprint import pformat
 from typing import ClassVar, TextIO, override
 
+from pydantic import Field
 from textual import on
 from textual.app import ComposeResult
 from textual.containers import Horizontal
 from textual.widgets import Button, Input, Label, Select, Switch, TextArea
+
 from components.dict_modal import DictModal
 from components.list_modal import ListModal
-from configuration.widget import ConfigurationWidget
 from configuration.data import ConfigurationData
+from configuration.widget import ConfigurationWidget
+from utils.requirements.binary_requirements import BinaryRequirement
 
 
 class ZshPluginManagerType(StrEnum):
     ZINIT = "ZInit"
     OMZ = "Oh My Zsh"
 
+
 class ZshPluginManager(ABC):
     @abstractmethod
-    def config_plugins(self, config_file: TextIO, resource_target_path: PosixPath, plugins: list[str]) -> None:
+    def config_plugins(
+        self,
+        config_file: TextIO,
+        resource_target_path: PosixPath,
+        plugins: list[str | BinaryRequirement[str]],
+    ) -> None:
         raise NotImplementedError
 
     @abstractmethod
@@ -36,63 +44,91 @@ class ZshPluginManager(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def config_theme(self, config_file: TextIO, resource_target_path: PosixPath, theme: str) -> None:
+    def config_theme(
+        self, config_file: TextIO, resource_target_path: PosixPath, theme: str
+    ) -> None:
         raise NotImplementedError
+
 
 class ZinitPluginManager(ZshPluginManager):
     @override
     def init(self, config_file: TextIO, resource_target_path: PosixPath) -> None:
-        config_file.writelines([
-            f'ZINIT_HOME="{resource_target_path}/plugin_managers/zinit"\n',
-            'source "${ZINIT_HOME}/zinit.zsh"\n\n',
-        ])
+        config_file.writelines(
+            [
+                f'ZINIT_HOME="{resource_target_path}/plugin_managers/zinit"\n',
+                'source "${ZINIT_HOME}/zinit.zsh"\n\n',
+            ]
+        )
 
     @override
-    def config_plugins(self, config_file: TextIO, resource_target_path: PosixPath, plugins: list[str]) -> None:
-        config_file.writelines([
-            f'zinit light {resource_target_path}/plugins/{plugin_name}\n' for plugin_name in plugins
-        ])
+    def config_plugins(
+        self,
+        config_file: TextIO,
+        resource_target_path: PosixPath,
+        plugins: list[str | BinaryRequirement[str]],
+    ) -> None:
+        config_file.writelines(
+            [
+                f"zinit light {resource_target_path}/plugins/{plugin_name}\n"
+                for plugin_name in plugins
+            ]
+        )
 
     @override
     def source(self, config_file: TextIO) -> None:
         # Needed to be sourced at initialization
-        _ = config_file.write('# Since we need to source zinit before, we don\'t source it here\n\n')
+        _ = config_file.write(
+            "# Since we need to source zinit before, we don't source it here\n\n"
+        )
         return
 
     @override
-    def config_theme(self, config_file: TextIO, resource_target_path: PosixPath, theme: str) -> None:
-        _ = config_file.write(f'zinit light {resource_target_path}/themes/{theme}\n')
+    def config_theme(
+        self, config_file: TextIO, resource_target_path: PosixPath, theme: str
+    ) -> None:
+        _ = config_file.write(f"zinit light {resource_target_path}/themes/{theme}\n")
+
 
 class OmzPluginManager(ZshPluginManager):
     @override
     def init(self, config_file: TextIO, resource_target_path: PosixPath) -> None:
-        config_file.writelines([
-            f'export ZSH="{resource_target_path}/plugin_managers/oh-my-zsh"\n',
-            'plugins=()\n\n',
-        ])
+        config_file.writelines(
+            [
+                f'export ZSH="{resource_target_path}/plugin_managers/oh-my-zsh"\n',
+                "plugins=()\n\n",
+            ]
+        )
 
     @override
-    def config_plugins(self, config_file: TextIO, resource_target_path: PosixPath, plugins: list[str]) -> None:
-        config_file.writelines([
-            f"plugins+=({plugin_name})\n" for plugin_name in plugins
-        ])
+    def config_plugins(
+        self, config_file: TextIO, resource_target_path: PosixPath, plugins: list[str]
+    ) -> None:
+        config_file.writelines(
+            [f"plugins+=({plugin_name})\n" for plugin_name in plugins]
+        )
 
     @override
     def source(self, config_file: TextIO) -> None:
-        config_file.writelines([
-            'source "${ZSH}/oh-my-zsh.sh"',
-            '\n',
-            '\n',
-        ])
+        config_file.writelines(
+            [
+                'source "${ZSH}/oh-my-zsh.sh"',
+                "\n",
+                "\n",
+            ]
+        )
 
     @override
-    def config_theme(self, config_file: TextIO, resource_target_path: PosixPath, theme: str) -> None:
+    def config_theme(
+        self, config_file: TextIO, resource_target_path: PosixPath, theme: str
+    ) -> None:
         _ = config_file.write(f'ZSH_THEME="{theme}/{theme}"\n')
+
 
 PLUGIN_MANAGERS: dict[ZshPluginManagerType, type[ZshPluginManager]] = {
     ZshPluginManagerType.ZINIT: ZinitPluginManager,
-    ZshPluginManagerType.OMZ: OmzPluginManager
+    ZshPluginManagerType.OMZ: OmzPluginManager,
 }
+
 
 def get_plugin_manager(plugin_manager_type: ZshPluginManagerType):
     return PLUGIN_MANAGERS.get(plugin_manager_type, ZinitPluginManager)()
@@ -105,30 +141,65 @@ class ZshConfigData(ConfigurationData):
         default_factory=lambda: PosixPath(os.getenv("HOME", "~"), ".local", "backups")
     )
     resource_target_path: PosixPath = Field(
-        default_factory=lambda: PosixPath(os.getenv("HOME", "~"), ".local", "share", "zsh", "resources")
+        default_factory=lambda: PosixPath(
+            os.getenv("HOME", "~"), ".local", "share", "zsh", "resources"
+        )
     )
 
-    aliases: dict[str, str] = Field(
+    aliases: dict[str, str | BinaryRequirement[str]] = Field(
         default=dict(
             l="ls -lah",
             la="ls -lAh",
             ll="ls -l",
-            ls="eza --icons=always",
+            ls=BinaryRequirement("eza --icons=always", ["eza"]),
             md="mkdir -p",
-            vim="nvim",
+            vim=BinaryRequirement("nvim", ["nvim"]),
             z="$EDITOR $HOME/.zshrc",
-            zj="zellij",
+            zj=BinaryRequirement("zellij", ["zellij"]),
             x=". $HOME/.zshrc",
-            cat="bat",
+            cat=BinaryRequirement("bat", ["bat"]),
             g="git",
         )
     )
-    exports: dict[str, str] = Field(default=dict(EDITOR="`which nvim`"))
+    exports: dict[str, str | BinaryRequirement[str]] = Field(
+        default=dict(EDITOR="`which nvim`")
+    )
     plugin_manager: ZshPluginManagerType = Field(default=ZshPluginManagerType.ZINIT)
     instant_prompt: bool = Field(default=True)
-    plugins: list[str] = Field(default=['zsh-syntax-highlighting', 'zsh-autosuggestions', 'zsh-vi-mode', 'fzf-tab'])
-    theme: str = Field(default='powerlevel10k')
-    extra: str = Field(default='')
+    plugins: list[str | BinaryRequirement[str]] = Field(
+        default=[
+            "zsh-syntax-highlighting",
+            "zsh-autosuggestions",
+            "zsh-vi-mode",
+            BinaryRequirement(value="fzf-tab", binaries=["fzf"]),
+            "command-not-found",
+        ],
+    )
+    theme: str = Field(default="powerlevel10k")
+    history_options: dict[str, str] = Field(
+        default={
+            "HISTSIZE": "5000",
+            "HISTFILE": "~/.zsh_history",
+            "SAVEHIST": "$HISTSIZE",
+            "HISTDUP": "erase",
+            "options": "appendhistory sharehistory hist_ignore_space hist_ignore_all_dups hist_save_no_dups hist_ignore_dups hist_find_no_dups",
+        }
+    )
+    zstyle: list[str | BinaryRequirement[str]] = Field(
+        default=[
+            "# Allow completions to be case insensitive\nzstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'",
+            """# Make the autocomplete for ls colorful\nzstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}" """,
+            "# Disable the default zsh completion menu\nzstyle ':completion:*' menu no",
+            BinaryRequirement(
+                "# Preview directory's content with eza when completing cd\nzstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always $realpath'",
+                ["fzf", "eza"],
+            ),
+        ]
+    )
+    evals: list[str] = Field(default=["fzf --zsh"])
+    autoloads: list[str] = Field(default=["compinit"])
+    extra: str = Field(default="")
+    recommended_extras: bool = Field(default=True)
 
     @property
     def resources_path(self) -> PosixPath:
@@ -160,8 +231,8 @@ class ZshConfigData(ConfigurationData):
             f"Backed up the config ([{self.config_path}] to [{self.backup_directory_path}])"
         )
 
-    def _escape_string(self, value: str) -> str:
-        return json.dumps(value)[1:-1]
+    def _escape_string(self, value: str | BinaryRequirement[str]) -> str:
+        return json.dumps(str(value))[1:-1]
 
     def _config_aliases(self, config_file: TextIO) -> None:
         if len(self.aliases.keys()) == 0:
@@ -195,66 +266,134 @@ class ZshConfigData(ConfigurationData):
         _ = config_file.write("\n")
 
         self.logger.debug("Configured exports %s", pformat(self.aliases))
-    
+
     def _copy_resources(self) -> None:
         self.resource_target_path.mkdir(parents=True, exist_ok=True)
 
-        _ = shutil.copytree(self.resources_path.as_posix(), self.resource_target_path.as_posix(), dirs_exist_ok=True)
+        _ = shutil.copytree(
+            self.resources_path.as_posix(),
+            self.resource_target_path.as_posix(),
+            dirs_exist_ok=True,
+        )
 
     def _config_instant_prompt(self, config_file: TextIO) -> None:
         if not self.instant_prompt:
             return
 
-        config_file.writelines([
-            '# Use the instant prompt (this should be the very first line in your .zshrc)\n',
-            f'if [[ -r "{self.resource_target_path}/instant-prompt.zsh" ]]; then\n',
-            f'  source "{self.resource_target_path}/instant-prompt.zsh"\n',
-            'fi',
-            '\n\n'
-        ])
+        config_file.writelines(
+            [
+                "# Use the instant prompt (this should be the very first line in your .zshrc)\n",
+                f'if [[ -r "{self.resource_target_path}/instant-prompt.zsh" ]]; then\n',
+                f'  source "{self.resource_target_path}/instant-prompt.zsh"\n',
+                "fi",
+                "\n\n",
+            ]
+        )
 
     def _config_p10k_prompt(self, config_file: TextIO) -> None:
-        _ = config_file.write(f'# Sourcing the p10k prompt\n')
-        _ = config_file.write(f'[[ ! -f {self.resource_target_path}/prompt.zsh ]] || source {self.resource_target_path}/prompt.zsh\n\n')
+        _ = config_file.write(f"# Sourcing the p10k prompt\n")
+        _ = config_file.write(
+            f"[[ ! -f {self.resource_target_path}/prompt.zsh ]] || source {self.resource_target_path}/prompt.zsh\n\n"
+        )
 
-        self.logger.debug('Using the premade p10k prompt')
+        self.logger.debug("Using the premade p10k prompt")
 
     def _source_lib_files(self, config_file: TextIO) -> None:
-        _ = config_file.write(f'# Sourcing library files (you can ignore this)\n')
-        _ = config_file.write(f'source {self.resource_target_path}/plugin_managers/lib/lib.zsh {self.resource_target_path}\n\n')
+        _ = config_file.write(f"# Sourcing library files (you can ignore this)\n")
+        _ = config_file.write(
+            f"source {self.resource_target_path}/plugin_managers/lib/lib.zsh {self.resource_target_path}\n\n"
+        )
 
-        self.logger.debug('Sourced library scripts to align zinit and omz')
+        self.logger.debug("Sourced library scripts to align zinit and omz")
 
-    def _init_plugin_manager(self, config_file: TextIO, plugin_manager: ZshPluginManager) -> None:
-        _ = config_file.write('# Initialize your plugin manager here\n')
+    def _init_plugin_manager(
+        self, config_file: TextIO, plugin_manager: ZshPluginManager
+    ) -> None:
+        _ = config_file.write("# Initialize your plugin manager here\n")
         plugin_manager.init(config_file, self.resource_target_path)
 
-        self.logger.debug('Initialized plugin manager: %s', self.plugin_manager)
+        self.logger.debug("Initialized plugin manager: %s", self.plugin_manager)
 
-    def _config_theme(self, config_file: TextIO, plugin_manager: ZshPluginManager) -> None:
-        _ = config_file.write('# Setup your theme here\n')
+    def _config_theme(
+        self, config_file: TextIO, plugin_manager: ZshPluginManager
+    ) -> None:
+        _ = config_file.write("# Setup your theme here\n")
         plugin_manager.config_theme(config_file, self.resource_target_path, self.theme)
 
-        self.logger.debug('Configured the shell theme: %s', self.theme)
+        self.logger.debug("Configured the shell theme: %s", self.theme)
 
-    def _config_plugins(self, config_file: TextIO, plugin_manager: ZshPluginManager) -> None:
-        _ = config_file.write('# Load all of the installed plugins\n')
-        plugin_manager.config_plugins(config_file, self.resource_target_path, self.plugins)
-        _ = config_file.write('\n')
+    def _config_plugins(
+        self, config_file: TextIO, plugin_manager: ZshPluginManager
+    ) -> None:
+        _ = config_file.write("# Load all of the installed plugins\n")
+        plugin_manager.config_plugins(
+            config_file, self.resource_target_path, self.plugins
+        )
+        _ = config_file.write("\n")
 
-        self.logger.debug('Configured zsh plugins: %s', pformat(self.plugins))
+        self.logger.debug("Configured zsh plugins: %s", pformat(self.plugins))
 
-    def _source_plugin_manager(self, config_file: TextIO, plugin_manager: ZshPluginManager) -> None:
-        _ = config_file.write('# Source your plugin manager here\n')
+    def _source_plugin_manager(
+        self, config_file: TextIO, plugin_manager: ZshPluginManager
+    ) -> None:
+        _ = config_file.write("# Source your plugin manager here\n")
         plugin_manager.source(config_file)
 
-        self.logger.debug('Sourced the plugin manager')
+        self.logger.debug("Sourced the plugin manager")
 
     def _config_extra(self, config_file: TextIO) -> None:
-        _ = config_file.write('# Here you can put anything you want to add to your zshrc\n')
+        _ = config_file.write(
+            "# Here you can put anything you want to add to your zshrc\n"
+        )
         _ = config_file.write(self.extra)
 
-        self.logger.debug('Wrote the extra zshrc lines')
+        self.logger.debug("Wrote the extra zshrc lines")
+
+    def _config_history(self, config_file: TextIO) -> None:
+        _ = config_file.write("# History options\n")
+
+        for key, value in self.history_options.items():
+            if key == "options":
+                _ = config_file.write(f"setopt {value}\n")
+            else:
+                _ = config_file.write(f"{key}={value}\n")
+
+        _ = config_file.write("\n")
+
+    def _config_zstyle(self, config_file: TextIO) -> None:
+        _ = config_file.write(
+            "# Zsh Styling, this is used for many options of the shell itself, from completions, to plugins\n"
+        )
+
+        config_file.writelines([str(style) + "\n" for style in self.zstyle])
+        _ = config_file.write("\n")
+
+    def _config_autoloads(self, config_file: TextIO) -> None:
+        _ = config_file.write(
+            "# Autoloads, these are extra functions that zsh exposes and you can enable\n"
+        )
+
+        config_file.writelines(
+            [f"autoload -U {autoload} && {autoload}\n" for autoload in self.autoloads]
+        )
+
+        _ = config_file.write("\n")
+
+    def _config_evals(self, config_file: TextIO) -> None:
+        _ = config_file.write("# Evaluations, for shell integrations and more\n")
+
+        config_file.writelines(
+            [f'eval "$({evaluation})"\n' for evaluation in self.evals]
+        )
+        _ = config_file.write("\n")
+
+    def _config_recommended_extras(self, config_file: TextIO) -> None:
+        _ = config_file.write("# Recommended extras for your configuration\n")
+
+        if self.plugin_manager == ZshPluginManagerType.ZINIT:
+            _ = config_file.write("""zinit cdreplay -q""")
+
+        _ = config_file.write("\n")
 
     @override
     def config(self) -> bool:
@@ -271,7 +410,7 @@ class ZshConfigData(ConfigurationData):
 
         self._copy_resources()
         with open(self.config_path, "a+") as config_file:
-            if self.theme == 'powerlevel10k':
+            if self.theme == "powerlevel10k":
                 self._config_instant_prompt(config_file)
 
             self._source_lib_files(config_file)
@@ -282,9 +421,15 @@ class ZshConfigData(ConfigurationData):
             self._config_plugins(config_file, plugin_manager)
             self._source_plugin_manager(config_file, plugin_manager)
 
-            if self.theme == 'powerlevel10k':
+            if self.theme == "powerlevel10k":
                 self._config_p10k_prompt(config_file)
 
+            self._config_history(config_file)
+            self._config_zstyle(config_file)
+            self._config_autoloads(config_file)
+            self._config_evals(config_file)
+            if self.recommended_extras:
+                self._config_recommended_extras(config_file)
             self._config_extra(config_file)
 
         return True
@@ -332,9 +477,12 @@ class ZshConfigWidget(ConfigurationWidget[ZshConfigData]):
             plugin_managers = list(ZshPluginManagerType)
             yield Label("Plugin Manager")
             yield Select(
-                [(plugin_manager_name, index) for index, plugin_manager_name in enumerate(plugin_managers)],
+                [
+                    (plugin_manager_name, index)
+                    for index, plugin_manager_name in enumerate(plugin_managers)
+                ],
                 allow_blank=False,
-                id="plugin-manager"
+                id="plugin-manager",
             )
 
         with Horizontal():
@@ -343,7 +491,9 @@ class ZshConfigWidget(ConfigurationWidget[ZshConfigData]):
 
         with Horizontal():
             yield Label("Instant Prompt [b](only for p10k)[/]")
-            yield Switch(value=self.config.instant_prompt, animate=False, id="instant-prompt")
+            yield Switch(
+                value=self.config.instant_prompt, animate=False, id="instant-prompt"
+            )
 
         with Horizontal():
             yield Label("Plugins")
@@ -358,7 +508,12 @@ class ZshConfigWidget(ConfigurationWidget[ZshConfigData]):
             yield Button("Open Exports List", id="export-button")
 
         yield Label("Extra", id="extra-label")
-        yield TextArea.code_editor(text=self.config.extra, language="bash", placeholder="Type whatever zshrc that you want to add", id="extra-area")
+        yield TextArea.code_editor(
+            text=self.config.extra,
+            language="bash",
+            placeholder="Type whatever zshrc that you want to add",
+            id="extra-area",
+        )
 
     @on(Select.Changed, "#plugin-manager")
     def plugin_manager_selection_changed(self, changed: Select.Changed) -> None:
@@ -384,4 +539,3 @@ class ZshConfigWidget(ConfigurationWidget[ZshConfigData]):
     @on(Switch.Changed, "#instant-prompt")
     def instant_prompt_changed(self, changed: Switch.Changed):
         self.config.instant_prompt = changed.value
-

@@ -6,5 +6,6 @@ if [[ ! `echo $0 | grep oh-my-zsh` ]]; then
   source $LIB_DIR/git.zsh
   source $LIB_DIR/prompt_info_functions.zsh
   source $LIB_DIR/theme-and-appearance.zsh
+  source $LIB_DIR/directories.zsh
 fi
 

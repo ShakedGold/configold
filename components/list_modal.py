@@ -7,19 +7,21 @@ from textual.dom import DOMNode
 from textual.screen import ModalScreen
 from textual.widgets import Button, Input, Label, TextArea
 
+from utils.requirements.binary_requirements import BinaryRequirement
+
 
 class ListModal(ModalScreen):
     def __init__(
         self,
-        data: list[str],
+        data: list[str | BinaryRequirement[str]],
         name: str | None = None,
         id: str | None = None,
         classes: str | None = None,
     ) -> None:
         super().__init__(name, id, classes)
 
-        self.original_data: list[str] = data.copy()
-        self.data: list[str] = data
+        self.original_data: list[str | BinaryRequirement[str]] = data.copy()
+        self.data: list[str | BinaryRequirement[str]] = data
         self.create_new_item: bool = False
         self.new_item: str | None = None
         self.logger: logging.Logger = logging.getLogger(
@@ -97,7 +99,7 @@ class ListModal(ModalScreen):
             with Container():
                 for value in self.data:
                     yield Horizontal(
-                        Input(value, classes="value"),
+                        Input(str(value), classes="value"),
                     )
 
                 if self.create_new_item:
