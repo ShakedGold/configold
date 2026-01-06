@@ -21,27 +21,25 @@ You can create a custom script that will install whatever program you want and c
 
 ```python
 import asyncio
+import logging
+
 from apps.zsh import ZshApp, ZshConfigData
 from apps.zsh.config import ZshPluginManagerType
 from utils import setup_logger
 
-
 zsh_config = ZshConfigData(
     plugin_manager=ZshPluginManagerType.ZINIT,
-    extra=r'''
-zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
-zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always $realpath'
-zstyle ':completion:*' menu no
-'''
 )
+
 zsh = ZshApp(zsh_config)
+
 
 async def main() -> None:
     setup_logger()
 
     _ = await zsh.install()
-    _ = zsh_config.config()
-
+    _ = zsh.configure()
+    
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -87,6 +85,7 @@ zinit light /home/shaked/.local/share/zsh/resources/plugins/zsh-syntax-highlight
 zinit light /home/shaked/.local/share/zsh/resources/plugins/zsh-autosuggestions
 zinit light /home/shaked/.local/share/zsh/resources/plugins/zsh-vi-mode
 zinit light /home/shaked/.local/share/zsh/resources/plugins/fzf-tab
+zinit light /home/shaked/.local/share/zsh/resources/plugins/command-not-found
 
 # Source your plugin manager here
 # Since we need to source zinit before, we don't source it here
@@ -94,11 +93,32 @@ zinit light /home/shaked/.local/share/zsh/resources/plugins/fzf-tab
 # Sourcing the p10k prompt
 [[ ! -f /home/shaked/.local/share/zsh/resources/prompt.zsh ]] || source /home/shaked/.local/share/zsh/resources/prompt.zsh
 
-# Here you can put anything you want to add to your zshrc
+# History options
+HISTSIZE=5000
+HISTFILE=~/.zsh_history
+SAVEHIST=$HISTSIZE
+HISTDUP=erase
+setopt appendhistory sharehistory hist_ignore_space hist_ignore_all_dups hist_save_no_dups hist_ignore_dups hist_find_no_dups
 
-zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
-zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always $realpath'
+# Zsh Styling, this is used for many options of the shell itself, from completions, to plugins
+# Allow completions to be case insensitive
+zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
+# Make the autocomplete for ls colorful
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}" 
+# Disable the default zsh completion menu
 zstyle ':completion:*' menu no
+# Preview directory's content with eza when completing cd
+zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always $realpath'
+
+# Autoloads, these are extra functions that zsh exposes and you can enable
+autoload -U compinit && compinit
+
+# Evaluations, for shell integrations and more
+eval "$(fzf --zsh)"
+
+# Recommended extras for your configuration
+zinit cdreplay -q
+# Here you can put anything you want to add to your zshrc
 ```
 
 You can share these scripts with friends to create your own library and default configurations!
