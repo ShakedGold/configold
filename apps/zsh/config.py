@@ -101,7 +101,10 @@ class OmzPluginManager(ZshPluginManager):
 
     @override
     def config_plugins(
-        self, config_file: TextIO, resource_target_path: PosixPath, plugins: list[str]
+        self,
+        config_file: TextIO,
+        resource_target_path: PosixPath,
+        plugins: list[str | BinaryRequirement[str]],
     ) -> None:
         config_file.writelines(
             [f"plugins+=({plugin_name})\n" for plugin_name in plugins]
@@ -161,6 +164,16 @@ class ZshConfigData(ConfigurationData):
             g="git",
         )
     )
+    suffix_aliases: dict[str, str | BinaryRequirement[str]] = Field(
+        default=dict(
+            c=BinaryRequirement("bat -l c", ["bat"], must_have=False),
+            py=BinaryRequirement("bat -l py", ["bat"], must_have=False),
+            md=BinaryRequirement("bat", ["bat"], must_have=False),
+            yaml=BinaryRequirement("bat -l yaml", ["bat"], must_have=False),
+            yml=BinaryRequirement("bat -l yaml", ["bat"], must_have=False),
+            json=BinaryRequirement("jless", ["jless"], must_have=False),
+        )
+    )
     exports: dict[str, str | BinaryRequirement[str]] = Field(
         default=dict(EDITOR="`which nvim`")
     )
@@ -194,10 +207,13 @@ class ZshConfigData(ConfigurationData):
                 "# Preview directory's content with eza when completing cd\nzstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always $realpath'",
                 ["fzf", "eza"],
             ),
+            "# Enable group description colors\nzstyle ':completion:*:descriptions' format '[%d]'",
         ]
     )
     evals: list[str] = Field(default=["fzf --zsh"])
-    autoloads: list[str] = Field(default=["compinit"])
+    autoloads: list[str] = Field(
+        default=["compinit", "zmv # A file mover with pattern matching"]
+    )
     extra: str = Field(default="")
     recommended_extras: bool = Field(default=True)
 
@@ -250,6 +266,22 @@ class ZshConfigData(ConfigurationData):
 
         self.logger.debug("Configured aliases %s", pformat(self.aliases))
 
+    def _config_suffix_aliases(self, config_file: TextIO) -> None:
+        if len(self.suffix_aliases.keys()) == 0:
+            return
+
+        _ = config_file.write(
+            """\n# This is the suffix aliases, they are like aliases but can be at the end of the command you run\n# This can be used for many things, like: opening files with the correct program depending on the file type\n"""
+        )
+        aliases_raw: str = "\n".join(
+            f'alias -s {alias_name}="{self._escape_string(alias_value)}"'
+            for alias_name, alias_value in self.suffix_aliases.items()
+        )
+        _ = config_file.write(aliases_raw)
+        _ = config_file.write("\n\n")
+
+        self.logger.debug("Configured suffix aliases %s", pformat(self.suffix_aliases))
+
     def _config_exports(self, config_file: TextIO) -> None:
         if len(self.exports.keys()) == 0:
             return
@@ -291,7 +323,7 @@ class ZshConfigData(ConfigurationData):
         )
 
     def _config_p10k_prompt(self, config_file: TextIO) -> None:
-        _ = config_file.write(f"# Sourcing the p10k prompt\n")
+        _ = config_file.write("# Sourcing the p10k prompt\n")
         _ = config_file.write(
             f"[[ ! -f {self.resource_target_path}/prompt.zsh ]] || source {self.resource_target_path}/prompt.zsh\n\n"
         )
@@ -299,7 +331,7 @@ class ZshConfigData(ConfigurationData):
         self.logger.debug("Using the premade p10k prompt")
 
     def _source_lib_files(self, config_file: TextIO) -> None:
-        _ = config_file.write(f"# Sourcing library files (you can ignore this)\n")
+        _ = config_file.write("# Sourcing library files (you can ignore this)\n")
         _ = config_file.write(
             f"source {self.resource_target_path}/plugin_managers/lib/lib.zsh {self.resource_target_path}\n\n"
         )
@@ -374,8 +406,13 @@ class ZshConfigData(ConfigurationData):
         )
 
         config_file.writelines(
-            [f"autoload -U {autoload} && {autoload}\n" for autoload in self.autoloads]
+            [f"autoload -U {autoload}\n" for autoload in self.autoloads]
         )
+
+        if "compinit" in self.autoloads:
+            _ = config_file.write(
+                "\n# compinit needs to run after it is autoloaded (to refresh the completions)\ncompinit\n"
+            )
 
         _ = config_file.write("\n")
 
@@ -391,7 +428,19 @@ class ZshConfigData(ConfigurationData):
         _ = config_file.write("# Recommended extras for your configuration\n")
 
         if self.plugin_manager == ZshPluginManagerType.ZINIT:
-            _ = config_file.write("""zinit cdreplay -q""")
+            _ = config_file.write("zinit cdreplay -q\n")
+
+        if "zsh-vi-mode" in self.plugins:
+            _ = config_file.write(
+                "\n# Only changing the escape key to `jk` in insert mode, we still\n# keep using the default keybindings `^[` in other modes\nZVM_VI_INSERT_ESCAPE_BINDKEY=jk\n"
+            )
+
+            _ = config_file.writelines(
+                [
+                    "ZVM_VI_HIGHLIGHT_BACKGROUND=#ffffff\n",
+                    "ZVM_VI_HIGHLIGHT_FOREGROUND=#000000\n",
+                ]
+            )
 
         _ = config_file.write("\n")
 
@@ -418,6 +467,7 @@ class ZshConfigData(ConfigurationData):
             self._config_theme(config_file, plugin_manager)
             self._config_exports(config_file)
             self._config_aliases(config_file)
+            self._config_suffix_aliases(config_file)
             self._config_plugins(config_file, plugin_manager)
             self._source_plugin_manager(config_file, plugin_manager)
 
@@ -539,3 +589,7 @@ class ZshConfigWidget(ConfigurationWidget[ZshConfigData]):
     @on(Switch.Changed, "#instant-prompt")
     def instant_prompt_changed(self, changed: Switch.Changed):
         self.config.instant_prompt = changed.value
+
+    @on(TextArea.SelectionChanged, "#extra-label")
+    def extra_changed(self, selection_changed: TextArea.SelectionChanged) -> None:
+        self.config.extra = selection_changed.text_area.text
