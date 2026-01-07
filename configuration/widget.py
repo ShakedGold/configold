@@ -1,7 +1,6 @@
 # pyright: reportAttributeAccessIssue=false
 import logging
 from typing import Generic, TypeVar
-import warnings
 from textual.visual import VisualType
 from textual.widgets import Label, Static
 from textual.widgets._label import LabelVariant
