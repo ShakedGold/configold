@@ -1,6 +1,16 @@
+from dataclasses import make_dataclass
 import logging
-from typing import Any, override
-from pydantic import BaseModel
+import os
+from pathlib import PosixPath
+from pprint import pformat
+from typing import Annotated, Any, Self, override
+from pydantic import BaseModel, ConfigDict, Field, SkipValidation
+
+import warnings
+
+from pydantic.json_schema import PydanticJsonSchemaWarning
+
+warnings.filterwarnings("ignore", category=PydanticJsonSchemaWarning)
 
 
 class ConfigurationData(BaseModel):
@@ -8,7 +18,17 @@ class ConfigurationData(BaseModel):
     Holds the data of the configuration
     """
 
+    model_config = ConfigDict(use_attribute_docstrings=True)
+    backup_directory_path: PosixPath = Field(
+        default_factory=lambda: PosixPath(os.getenv("HOME", "~"), ".local", "backups")
+    )
     logger: Any = logging.Logger("")
+
+    descriptions: SkipValidation[Self] = {}  # pyright: ignore[reportAssignmentType]
+
+    @property
+    def config_path(self) -> PosixPath:
+        raise NotImplementedError
 
     @override
     def model_post_init(self, context: Any, /) -> None:
@@ -18,5 +38,46 @@ class ConfigurationData(BaseModel):
             f"{__name__}.{type(self).__name__}"
         )
 
-    def config(self) -> bool:
+        """
+        This ugly thing is because we want to have access to the descriptions of the properties of the model, and have type hinting on that, so we create a dynamic dataclass type and instantiate it.
+        We basically convert all of the model to json and extract only the description to set it in the description dict which is marked as Self to allow type hinting with the names
+        of the properties
+        NOTE: The types of the properties themselves in the descriptions property should be ignored, they are all strings
+
+        I should create a better way for this, but for now this is it.
+        The type hinting system does not like this...
+        """
+        schema_defs: dict[str, dict[str, Any]] = self.model_json_schema().get("$defs")  # pyright: ignore[reportAssignmentType,reportExplicitAny]
+        data_key: str = list(schema_defs.keys())[0]
+        properties: dict[str, dict[str, str]] = schema_defs.get(data_key, {}).get(
+            "properties"
+        )  # pyright: ignore[reportAssignmentType]
+
+        descriptions_class: type = make_dataclass(
+            "descriptions",
+            ((property_name, str) for property_name in properties),
+        )
+        self.descriptions = descriptions_class(
+            **{
+                property_name: property_value.get("description")
+                for property_name, property_value in properties.items()
+            }
+        )
+
+    def _config(self) -> bool:
         raise NotImplementedError
+
+    def _backup_config(self) -> None:
+        raise NotImplementedError
+
+    def config(self) -> bool:
+        self.logger.debug("Configuration: %s", pformat(dict(self)))
+
+        if self.config_path.exists():
+            self.logger.debug(f"Configuration file exists ({self.config_path})")
+            self._backup_config()
+
+            self.config_path.unlink()
+            self.logger.debug(f"Removed config file ({self.config_path})")
+
+        return self._config()

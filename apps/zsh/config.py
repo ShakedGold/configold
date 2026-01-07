@@ -140,9 +140,6 @@ def get_plugin_manager(plugin_manager_type: ZshPluginManagerType):
 class ZshConfigData(ConfigurationData):
     CONFIG_FILE_NAME: ClassVar[str] = ".zshrc"
 
-    backup_directory_path: PosixPath = Field(
-        default_factory=lambda: PosixPath(os.getenv("HOME", "~"), ".local", "backups")
-    )
     resource_target_path: PosixPath = Field(
         default_factory=lambda: PosixPath(
             os.getenv("HOME", "~"), ".local", "share", "zsh", "resources"
@@ -229,9 +226,11 @@ class ZshConfigData(ConfigurationData):
         return home_path
 
     @property
+    @override
     def config_path(self) -> PosixPath:
         return PosixPath(self.home_path, type(self).CONFIG_FILE_NAME)
 
+    @override
     def _backup_config(self) -> None:
         self.backup_directory_path.mkdir(parents=True, exist_ok=True)
 
@@ -445,16 +444,7 @@ class ZshConfigData(ConfigurationData):
         _ = config_file.write("\n")
 
     @override
-    def config(self) -> bool:
-        self.logger.debug("Configuration: %s", pformat(dict(self)))
-
-        if self.config_path.exists():
-            self.logger.debug(f"Configuration file exists ({self.config_path})")
-            self._backup_config()
-
-            self.config_path.unlink()
-            self.logger.debug(f"Removed config file ({self.config_path})")
-
+    def _config(self) -> bool:
         plugin_manager = get_plugin_manager(self.plugin_manager)
 
         self._copy_resources()
