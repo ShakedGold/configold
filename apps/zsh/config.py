@@ -16,7 +16,7 @@ from textual.widgets import Button, Input, Label, Select, Switch, TextArea
 from components.dict_modal import DictModal
 from components.list_modal import ListModal
 from configuration.data import ConfigurationData
-from configuration.widget import ConfigurationWidget
+from configuration.widget import ConfigurationWidget, LabelWithTooltip
 from utils.requirements.binary_requirements import BinaryRequirement
 
 
@@ -161,6 +161,8 @@ class ZshConfigData(ConfigurationData):
             g="git",
         )
     )
+    "The aliases list (shortcuts for commands)"
+
     suffix_aliases: dict[str, str | BinaryRequirement[str]] = Field(
         default=dict(
             c=BinaryRequirement("bat -l c", ["bat"], must_have=False),
@@ -171,11 +173,19 @@ class ZshConfigData(ConfigurationData):
             json=BinaryRequirement("jless", ["jless"], must_have=False),
         )
     )
+    "Like the aliases but at the end of a command instead of at the start"
+
     exports: dict[str, str | BinaryRequirement[str]] = Field(
         default=dict(EDITOR="`which nvim`")
     )
+    "Exported variables that can be used anywhere (example: echo $VARIABLE_NAME)"
+
     plugin_manager: ZshPluginManagerType = Field(default=ZshPluginManagerType.ZINIT)
+    "The plugin manager controls how the plugins are installed"
+
     instant_prompt: bool = Field(default=True)
+    "If you use p10k, then display the prompt immedietly while zsh is loading"
+
     plugins: list[str | BinaryRequirement[str]] = Field(
         default=[
             "zsh-syntax-highlighting",
@@ -185,7 +195,11 @@ class ZshConfigData(ConfigurationData):
             "command-not-found",
         ],
     )
+    "The list of plugins you want to use"
+
     theme: str = Field(default="powerlevel10k")
+    "The theme you wish to use"
+
     history_options: dict[str, str] = Field(
         default={
             "HISTSIZE": "5000",
@@ -195,6 +209,8 @@ class ZshConfigData(ConfigurationData):
             "options": "appendhistory sharehistory hist_ignore_space hist_ignore_all_dups hist_save_no_dups hist_ignore_dups hist_find_no_dups",
         }
     )
+    "History options, like the size of the command list, and how and when to save them"
+
     zstyle: list[str | BinaryRequirement[str]] = Field(
         default=[
             "# Allow completions to be case insensitive\nzstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'",
@@ -207,12 +223,21 @@ class ZshConfigData(ConfigurationData):
             "# Enable group description colors\nzstyle ':completion:*:descriptions' format '[%d]'",
         ]
     )
+    "Settings for zsh and it's plugins"
+
     evals: list[str] = Field(default=["fzf --zsh"])
+    "Evaluations are shell code that is being executed inside the current script (basically a copy, paste and execute at once)"
+
     autoloads: list[str] = Field(
         default=["compinit", "zmv # A file mover with pattern matching"]
     )
+    "Autoloads are extra functions that zsh export for you"
+
     extra: str = Field(default="")
+    "Any extra zshrc configuration you want"
+
     recommended_extras: bool = Field(default=True)
+    "My recommended extra zshrc configurations :)"
 
     @property
     def resources_path(self) -> PosixPath:
@@ -515,7 +540,9 @@ class ZshConfigWidget(ConfigurationWidget[ZshConfigData]):
     def compose(self) -> ComposeResult:
         with Horizontal():
             plugin_managers = list(ZshPluginManagerType)
-            yield Label("Plugin Manager")
+            yield LabelWithTooltip(
+                "Plugin Manager", self.config.descriptions.plugin_manager
+            )
             yield Select(
                 [
                     (plugin_manager_name, index)
@@ -526,28 +553,33 @@ class ZshConfigWidget(ConfigurationWidget[ZshConfigData]):
             )
 
         with Horizontal():
-            yield Label("Theme")
+            yield LabelWithTooltip("Theme", self.config.descriptions.theme)
             yield Input(value=self.config.theme, id="theme")
 
         with Horizontal():
-            yield Label("Instant Prompt [b](only for p10k)[/]")
+            yield LabelWithTooltip(
+                "Instant Prompt [b](only for p10k)[/]",
+                str(self.config.descriptions.instant_prompt),
+            )
             yield Switch(
                 value=self.config.instant_prompt, animate=False, id="instant-prompt"
             )
 
         with Horizontal():
-            yield Label("Plugins")
+            yield LabelWithTooltip("Plugins", str(self.config.descriptions.plugins))
             yield Button("Open Plugins List", id="plugins-button")
 
         with Horizontal():
-            yield Label("Aliases")
+            yield LabelWithTooltip("Aliases", str(self.config.descriptions.aliases))
             yield Button("Open Aliases List", id="alias-button")
 
         with Horizontal():
-            yield Label("Exports")
+            yield LabelWithTooltip("Exports", str(self.config.descriptions.exports))
             yield Button("Open Exports List", id="export-button")
 
-        yield Label("Extra", id="extra-label")
+        yield LabelWithTooltip(
+            "Extra", str(self.config.descriptions.extra), id="extra-label"
+        )
         yield TextArea.code_editor(
             text=self.config.extra,
             language="bash",

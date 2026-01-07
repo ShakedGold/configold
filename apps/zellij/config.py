@@ -17,7 +17,7 @@ class ZellijConfigData(ConfigurationData):
     default_layout: str | Literal["compact"] | Literal["default"] = Field(
         default="compact"
     )
-    "The default layout of the bar"
+    "The default layout of the bar (for example: the default layout is verbose, and shows all of the possible keybindings)"
 
     startup_tips: bool = Field(default=False)
     "Whether or not to show the startup tips upon opening zellij"
