@@ -7,9 +7,9 @@ from pydantic import Field
 from textual import on
 from textual.app import ComposeResult
 from textual.containers import Horizontal
-from textual.widgets import Input, Label, Switch
+from textual.widgets import Input, Switch
 
-from configuration import ConfigurationData, ConfigurationWidget, data
+from configuration import ConfigurationData, ConfigurationWidget
 from configuration.widget import LabelWithTooltip
 
 

@@ -3,7 +3,7 @@ import logging
 import os
 from pathlib import PosixPath
 from pprint import pformat
-from typing import Annotated, Any, Self, override
+from typing import Any, Self, override
 from pydantic import BaseModel, ConfigDict, Field, SkipValidation
 
 import warnings

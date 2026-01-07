@@ -11,7 +11,7 @@ from pydantic import Field
 from textual import on
 from textual.app import ComposeResult
 from textual.containers import Horizontal
-from textual.widgets import Button, Input, Label, Select, Switch, TextArea
+from textual.widgets import Button, Input, Select, Switch, TextArea
 
 from components.dict_modal import DictModal
 from components.list_modal import ListModal
