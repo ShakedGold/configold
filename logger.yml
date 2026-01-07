@@ -29,6 +29,7 @@ handlers:
 
   file:
     class: logging.FileHandler
+    mode: w
     filename: app.debug.log
     formatter: json_formatter
     level: DEBUG
