@@ -54,7 +54,7 @@ All of your beloved shell utils are here
 
 - [x] fd
   - [x] Installable
-<details>
+</details>
 
 ### Create custom scripts to install and configure
 Don't like the options you have in the UI?
