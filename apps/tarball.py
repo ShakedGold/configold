@@ -40,7 +40,7 @@ class TarballApp(InstallableApp):
     @property
     def full_link_path(self):
         return PosixPath(
-            self.full_target_directory_path,
+            consts.INSTALL_DIRECTORY,
             f"{type(self).BINARY_NAME}{type(self).UNARCHIVE_DIRECTORY_PREFIX}",
             self.link_path,
         )
@@ -51,7 +51,7 @@ class TarballApp(InstallableApp):
         self.logger.debug(f"Binary path of tar ({tar_path})")
 
         self.logger.debug(
-            f"Making sure that the source unarchive directory exists ({self.full_target_directory_path})"
+            f"Making sure that the source unarchive directory exists ({consts.INSTALL_DIRECTORY})"
         )
         self.full_source_path.mkdir(parents=True, exist_ok=True)
 

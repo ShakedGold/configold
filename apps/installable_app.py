@@ -6,6 +6,7 @@ import sys
 from pathlib import PosixPath
 from typing import override
 
+from apps import consts
 import utils
 
 from configuration import Configuration
@@ -47,7 +48,6 @@ class InstallableApp(Widget):
     BINARIES: dict[str, str | None] = {}
     BINARY_NAME: str = ""
     CWD: str = ""
-    RELATIVE_TARGET_DIRECTORY: str = ".local/bin"
 
     should_install: reactive[bool] = reactive(True)
 
@@ -91,12 +91,8 @@ class InstallableApp(Widget):
         return PosixPath(self.full_source_directory, type(self).BINARY_NAME)
 
     @property
-    def full_target_directory_path(self):
-        return PosixPath(self.home_path, type(self).RELATIVE_TARGET_DIRECTORY)
-
-    @property
     def full_target_path(self):
-        return PosixPath(self.full_target_directory_path, type(self).BINARY_NAME)
+        return PosixPath(consts.INSTALL_DIRECTORY, type(self).BINARY_NAME)
 
     @property
     def backup_directory_path(self) -> PosixPath:
@@ -124,9 +120,6 @@ class InstallableApp(Widget):
         self.logger.debug(f"home_path: {self.home_path}")
         self.logger.debug(f"full_source_path: {self.full_source_path}")
         self.logger.debug(f"full_source_directory: {self.full_source_directory}")
-        self.logger.debug(
-            f"full_target_directory_path: {self.full_target_directory_path}"
-        )
         self.logger.debug(f"full_target_path: {self.full_target_path}")
         self.logger.debug(f"backup_directory_path: {self.backup_directory_path}")
 
@@ -170,12 +163,23 @@ class InstallableApp(Widget):
 
     async def install(self) -> bool:
         self.logger.debug(
-            f"Making sure that the target directory exists ({self.full_target_directory_path})"
+            f"Making sure that the target directory exists ({consts.INSTALL_DIRECTORY})"
         )
-        self.full_target_directory_path.mkdir(parents=True, exist_ok=True)
+        consts.INSTALL_DIRECTORY.mkdir(parents=True, exist_ok=True)
 
         self.logger.info("Installing application")
         did_install = await self._install()
+
+        binary_path = utils.find_executable(type(self).BINARY_NAME)
+        if binary_path is not None:
+            return True
+
+        os.environ["PATH"] = f"{os.getenv('PATH')}:{consts.INSTALL_DIRECTORY}"
+
+        self.logger.debug(
+            f"{type(self).BINARY_NAME} was not found in the path, added the directory"
+        )
+
         if not did_install:
             self.logger.warning(
                 f"The binary: {type(self).BINARY_NAME} did not install correctly (is it already installed?)"

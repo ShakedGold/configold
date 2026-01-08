@@ -7,6 +7,8 @@ from pprint import pformat
 from typing import ClassVar, TextIO, override
 from pydantic import Field
 
+from apps import consts
+
 from .plugin_managers import ZshPluginManager, ZshPluginManagerType, get_plugin_manager
 from configuration.data import ConfigurationData
 from utils.requirements.binary_requirements import BinaryRequirement
@@ -156,7 +158,7 @@ class ZshConfigData(ConfigurationData):
             return
 
         _ = config_file.write(
-            """\n# This is the exports, they define variables that are accessible by other programs (plus the shell itself)\n# You can override this to whatever you want, for example: the EDITOR env variable will define what multiple programs\n# will use as their editor, for example `sudoedit` (the command to edit files as the super user)\n"""
+            """# This is the exports, they define variables that are accessible by other programs (plus the shell itself)\n# You can override this to whatever you want, for example: the EDITOR env variable will define what multiple programs\n# will use as their editor, for example `sudoedit` (the command to edit files as the super user)\n"""
         )
 
         exports_raw: str = "\n".join(
@@ -313,6 +315,13 @@ class ZshConfigData(ConfigurationData):
 
         _ = config_file.write("\n")
 
+    def _add_binaries_to_path(self, config_file: TextIO) -> None:
+        _ = config_file.write(
+            "\n# Exporting your installed programs (removing this line will cause the installed programs with the configold tool to brake)\n"
+        )
+        _ = config_file.write(f'export PATH="$PATH:{consts.INSTALL_DIRECTORY}"\n')
+        _ = config_file.write("\n")
+
     @override
     def _config(self) -> bool:
         plugin_manager = get_plugin_manager(self.plugin_manager)
@@ -325,6 +334,7 @@ class ZshConfigData(ConfigurationData):
             self._source_lib_files(config_file)
             self._init_plugin_manager(config_file, plugin_manager)
             self._config_theme(config_file, plugin_manager)
+            self._add_binaries_to_path(config_file)
             self._config_exports(config_file)
             self._config_aliases(config_file)
             self._config_suffix_aliases(config_file)
