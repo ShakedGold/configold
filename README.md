@@ -14,6 +14,43 @@ An easy to use user interface to easily configure your setup.
 
 Don't like to change defaults? just nextify that shi- and get a great configuration by default!
 
+### Configure all of your shell
+#### Currently supported programs
+- [x] Zsh
+  - [x] Installable
+  - [x] Configurable (sdk)
+  - [x] Configurable (UI)
+
+- [x] Zellij
+  - [x] Installable
+  - [x] Configurable (sdk)
+  - [x] Configurable (UI)
+
+- [x] TMUX
+  - [x] Installable
+  - [x] Configurable (sdk)
+  - [ ] Configurable (UI)
+
+- [x] Neovim
+  - [x] Installable
+  - [ ] Configurable (sdk)
+  - [ ] Configurable (UI)
+
+- [x] fzf
+  - [x] Installable
+
+- [x] eza
+  - [x] Installable
+
+- [x] rg
+  - [x] Installable
+
+- [x] zoxide
+  - [x] Installable
+
+- [x] fd
+  - [x] Installable
+
 ### Create custom scripts to install and configure
 Don't like the options you have in the UI?
 
