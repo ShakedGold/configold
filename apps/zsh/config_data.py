@@ -1,140 +1,15 @@
 import json
 import os
-import shutil
-from abc import ABC, abstractmethod
-from enum import StrEnum
 from pathlib import PosixPath
+import shutil
+
 from pprint import pformat
 from typing import ClassVar, TextIO, override
-
 from pydantic import Field
-from textual import on
-from textual.app import ComposeResult
-from textual.containers import Horizontal
-from textual.widgets import Button, Input, Select, Switch, TextArea
 
-from components.dict_modal import DictModal
-from components.list_modal import ListModal
+from .plugin_managers import ZshPluginManager, ZshPluginManagerType, get_plugin_manager
 from configuration.data import ConfigurationData
-from configuration.widget import ConfigurationWidget, LabelWithTooltip
 from utils.requirements.binary_requirements import BinaryRequirement
-
-
-class ZshPluginManagerType(StrEnum):
-    ZINIT = "ZInit"
-    OMZ = "Oh My Zsh"
-
-
-class ZshPluginManager(ABC):
-    @abstractmethod
-    def config_plugins(
-        self,
-        config_file: TextIO,
-        resource_target_path: PosixPath,
-        plugins: list[str | BinaryRequirement[str]],
-    ) -> None:
-        raise NotImplementedError
-
-    @abstractmethod
-    def init(self, config_file: TextIO, resource_target_path: PosixPath) -> None:
-        raise NotImplementedError
-
-    @abstractmethod
-    def source(self, config_file: TextIO) -> None:
-        raise NotImplementedError
-
-    @abstractmethod
-    def config_theme(
-        self, config_file: TextIO, resource_target_path: PosixPath, theme: str
-    ) -> None:
-        raise NotImplementedError
-
-
-class ZinitPluginManager(ZshPluginManager):
-    @override
-    def init(self, config_file: TextIO, resource_target_path: PosixPath) -> None:
-        config_file.writelines(
-            [
-                f'ZINIT_HOME="{resource_target_path}/plugin_managers/zinit"\n',
-                'source "${ZINIT_HOME}/zinit.zsh"\n\n',
-            ]
-        )
-
-    @override
-    def config_plugins(
-        self,
-        config_file: TextIO,
-        resource_target_path: PosixPath,
-        plugins: list[str | BinaryRequirement[str]],
-    ) -> None:
-        config_file.writelines(
-            [
-                f"zinit light {resource_target_path}/plugins/{plugin_name}\n"
-                for plugin_name in plugins
-            ]
-        )
-
-    @override
-    def source(self, config_file: TextIO) -> None:
-        # Needed to be sourced at initialization
-        _ = config_file.write(
-            "# Since we need to source zinit before, we don't source it here\n\n"
-        )
-        return
-
-    @override
-    def config_theme(
-        self, config_file: TextIO, resource_target_path: PosixPath, theme: str
-    ) -> None:
-        _ = config_file.write(f"zinit light {resource_target_path}/themes/{theme}\n")
-
-
-class OmzPluginManager(ZshPluginManager):
-    @override
-    def init(self, config_file: TextIO, resource_target_path: PosixPath) -> None:
-        config_file.writelines(
-            [
-                f'export ZSH="{resource_target_path}/plugin_managers/oh-my-zsh"\n',
-                "plugins=()\n\n",
-            ]
-        )
-
-    @override
-    def config_plugins(
-        self,
-        config_file: TextIO,
-        resource_target_path: PosixPath,
-        plugins: list[str | BinaryRequirement[str]],
-    ) -> None:
-        config_file.writelines(
-            [f"plugins+=({plugin_name})\n" for plugin_name in plugins]
-        )
-
-    @override
-    def source(self, config_file: TextIO) -> None:
-        config_file.writelines(
-            [
-                'source "${ZSH}/oh-my-zsh.sh"',
-                "\n",
-                "\n",
-            ]
-        )
-
-    @override
-    def config_theme(
-        self, config_file: TextIO, resource_target_path: PosixPath, theme: str
-    ) -> None:
-        _ = config_file.write(f'ZSH_THEME="{theme}/{theme}"\n')
-
-
-PLUGIN_MANAGERS: dict[ZshPluginManagerType, type[ZshPluginManager]] = {
-    ZshPluginManagerType.ZINIT: ZinitPluginManager,
-    ZshPluginManagerType.OMZ: OmzPluginManager,
-}
-
-
-def get_plugin_manager(plugin_manager_type: ZshPluginManagerType):
-    return PLUGIN_MANAGERS.get(plugin_manager_type, ZinitPluginManager)()
 
 
 class ZshConfigData(ConfigurationData):
@@ -225,7 +100,7 @@ class ZshConfigData(ConfigurationData):
     )
     "Settings for zsh and it's plugins"
 
-    evals: list[str] = Field(default=["fzf --zsh"])
+    evals: list[str | BinaryRequirement[str]] = Field(default=["fzf --zsh"])
     "Evaluations are shell code that is being executed inside the current script (basically a copy, paste and execute at once)"
 
     autoloads: list[str] = Field(
@@ -486,6 +361,9 @@ class ZshConfigData(ConfigurationData):
             self._config_plugins(config_file, plugin_manager)
             self._source_plugin_manager(config_file, plugin_manager)
 
+            if self.recommended_extras:
+                self._config_recommended_extras(config_file)
+
             if self.theme == "powerlevel10k":
                 self._config_p10k_prompt(config_file)
 
@@ -493,125 +371,6 @@ class ZshConfigData(ConfigurationData):
             self._config_zstyle(config_file)
             self._config_autoloads(config_file)
             self._config_evals(config_file)
-            if self.recommended_extras:
-                self._config_recommended_extras(config_file)
             self._config_extra(config_file)
 
         return True
-
-
-class ZshConfigWidget(ConfigurationWidget[ZshConfigData]):
-    DEFAULT_CSS: str = """
-    ZshConfigWidget > Horizontal {
-        height: auto;
-        width: auto;
-        align: center middle;
-    }
-
-    ZshConfigWidget > Horizontal > Label {
-        height: 100%;
-        content-align: left middle;
-    }
-
-    ZshConfigWidget > Horizontal > * {
-        width: 1fr;
-    }
-
-    ZshConfigWidget > Horizontal > Button {
-        max-width: 30;
-        margin: 0 2;
-    }
-
-    #instant-prompt {
-        max-width: 10;
-    }
-
-    #extra-label {
-        margin: 1 0;
-    }
-
-    #extra-area {
-        width: 100%;
-        height: auto;
-    }
-    """
-
-    @override
-    def compose(self) -> ComposeResult:
-        with Horizontal():
-            plugin_managers = list(ZshPluginManagerType)
-            yield LabelWithTooltip(
-                "Plugin Manager", self.config.descriptions.plugin_manager
-            )
-            yield Select(
-                [
-                    (plugin_manager_name, index)
-                    for index, plugin_manager_name in enumerate(plugin_managers)
-                ],
-                allow_blank=False,
-                id="plugin-manager",
-            )
-
-        with Horizontal():
-            yield LabelWithTooltip("Theme", self.config.descriptions.theme)
-            yield Input(value=self.config.theme, id="theme")
-
-        with Horizontal():
-            yield LabelWithTooltip(
-                "Instant Prompt [b](only for p10k)[/]",
-                str(self.config.descriptions.instant_prompt),
-            )
-            yield Switch(
-                value=self.config.instant_prompt, animate=False, id="instant-prompt"
-            )
-
-        with Horizontal():
-            yield LabelWithTooltip("Plugins", str(self.config.descriptions.plugins))
-            yield Button("Open Plugins List", id="plugins-button")
-
-        with Horizontal():
-            yield LabelWithTooltip("Aliases", str(self.config.descriptions.aliases))
-            yield Button("Open Aliases List", id="alias-button")
-
-        with Horizontal():
-            yield LabelWithTooltip("Exports", str(self.config.descriptions.exports))
-            yield Button("Open Exports List", id="export-button")
-
-        yield LabelWithTooltip(
-            "Extra", str(self.config.descriptions.extra), id="extra-label"
-        )
-        yield TextArea.code_editor(
-            text=self.config.extra,
-            language="bash",
-            placeholder="Type whatever zshrc that you want to add",
-            id="extra-area",
-        )
-
-    @on(Select.Changed, "#plugin-manager")
-    def plugin_manager_selection_changed(self, changed: Select.Changed) -> None:
-        selected_plugin_manager = list(ZshPluginManagerType)[int(str(changed.value))]
-        self.config.plugin_manager = selected_plugin_manager
-
-    @on(Button.Pressed, "#alias-button")
-    def open_aliases_list_modal(self) -> None:
-        _ = self.app.push_screen(DictModal(self.config.aliases, name="Aliases"))
-
-    @on(Button.Pressed, "#export-button")
-    def open_export_list_modal(self) -> None:
-        _ = self.app.push_screen(DictModal(self.config.exports, name="Exports"))
-
-    @on(Button.Pressed, "#plugins-button")
-    def open_export_list_modal(self) -> None:
-        _ = self.app.push_screen(ListModal(self.config.plugins, name="Plugins"))
-
-    @on(Input.Blurred, "#theme")
-    def theme_changed(self, blurred: Input.Blurred):
-        self.config.theme = blurred.value
-
-    @on(Switch.Changed, "#instant-prompt")
-    def instant_prompt_changed(self, changed: Switch.Changed):
-        self.config.instant_prompt = changed.value
-
-    @on(TextArea.SelectionChanged, "#extra-label")
-    def extra_changed(self, selection_changed: TextArea.SelectionChanged) -> None:
-        self.config.extra = selection_changed.text_area.text

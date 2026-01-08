@@ -2,7 +2,8 @@ from pathlib import PosixPath
 
 from apps import consts
 from apps.tarball import TarballApp
-from apps.zellij.config import ZellijConfigData, ZellijConfigWidget
+from .config_data import ZellijConfigData
+from .config_widget import ZellijConfigWidget
 from configuration import Configuration
 
 

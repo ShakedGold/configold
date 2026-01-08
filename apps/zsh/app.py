@@ -2,7 +2,8 @@ from pathlib import PosixPath
 
 from apps import consts
 from apps.tarball import TarballApp
-from apps.zsh.config import ZshConfigData, ZshConfigWidget
+from .config_data import ZshConfigData
+from .config_widget import ZshConfigWidget
 from configuration import Configuration
 
 
