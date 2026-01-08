@@ -15,7 +15,11 @@ An easy to use user interface to easily configure your setup.
 Don't like to change defaults? just nextify that shi- and get a great configuration by default!
 
 ### Configure all of your shell
-#### Currently supported programs
+All of your beloved shell utils are here
+
+<details>
+<summary>Currently supported programs</summary>
+
 - [x] Zsh
   - [x] Installable
   - [x] Configurable (sdk)
@@ -50,6 +54,7 @@ Don't like to change defaults? just nextify that shi- and get a great configurat
 
 - [x] fd
   - [x] Installable
+<details>
 
 ### Create custom scripts to install and configure
 Don't like the options you have in the UI?
