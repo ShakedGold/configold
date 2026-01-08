@@ -14,6 +14,7 @@ from utils.requirements.binary_requirements import BinaryRequirement
 
 class ZshConfigData(ConfigurationData):
     CONFIG_FILE_NAME: ClassVar[str] = ".zshrc"
+    CONFIG_NAME: ClassVar[str] = "zsh"
 
     resource_target_path: PosixPath = Field(
         default_factory=lambda: PosixPath(
@@ -31,6 +32,7 @@ class ZshConfigData(ConfigurationData):
             vim=BinaryRequirement("nvim", ["nvim"], must_have=False),
             z="$EDITOR $HOME/.zshrc",
             zj=BinaryRequirement("zellij", ["zellij"], must_have=False),
+            tmux=BinaryRequirement("tmux -u", ["tmux"], must_have=False),
             x=". $HOME/.zshrc",
             cat=BinaryRequirement("bat", ["bat"], must_have=False),
             g="git",
@@ -113,38 +115,6 @@ class ZshConfigData(ConfigurationData):
 
     recommended_extras: bool = Field(default=True)
     "My recommended extra zshrc configurations :)"
-
-    @property
-    def resources_path(self) -> PosixPath:
-        return PosixPath(__file__, "..", "resources").resolve()
-
-    @property
-    def home_path(self):
-        home_path = os.getenv("HOME")
-        if home_path is None:
-            home_path = "~"
-        return home_path
-
-    @property
-    @override
-    def config_path(self) -> PosixPath:
-        return PosixPath(self.home_path, type(self).CONFIG_FILE_NAME)
-
-    @override
-    def _backup_config(self) -> None:
-        self.backup_directory_path.mkdir(parents=True, exist_ok=True)
-
-        target_backup_directory_path: str = PosixPath(
-            self.backup_directory_path, self.config_path.name
-        ).as_posix()
-
-        _ = shutil.copy(
-            self.config_path,
-            target_backup_directory_path,
-        )
-        self.logger.debug(
-            f"Backed up the config ([{self.config_path}] to [{self.backup_directory_path}])"
-        )
 
     def _escape_string(self, value: str | BinaryRequirement[str]) -> str:
         return json.dumps(str(value))[1:-1]

@@ -1,7 +1,6 @@
 import os
 from pathlib import PosixPath
-import shutil
-from typing import Literal, TextIO, override
+from typing import ClassVar, Literal, TextIO, override
 
 from pydantic import Field
 
@@ -9,6 +8,9 @@ from configuration import ConfigurationData
 
 
 class ZellijConfigData(ConfigurationData):
+    CONFIG_NAME: ClassVar[str] = "zellij"
+    CONFIG_FILE_NAME: ClassVar[str] = "config.kdl"
+
     default_layout: str | Literal["compact"] | Literal["default"] = Field(
         default="compact"
     )
@@ -26,27 +28,6 @@ class ZellijConfigData(ConfigurationData):
     theme: str = Field(default="catppuccin-macchiato")
     "The theme to select"
 
-    @property
-    @override
-    def config_path(self) -> PosixPath:
-        return PosixPath(os.getenv("HOME", "~"), ".config", "zellij", "config.kdl")
-
-    @override
-    def _backup_config(self) -> None:
-        self.backup_directory_path.mkdir(parents=True, exist_ok=True)
-
-        target_backup_directory_path: str = PosixPath(
-            self.backup_directory_path, self.config_path.name
-        ).as_posix()
-
-        _ = shutil.copy(
-            self.config_path,
-            target_backup_directory_path,
-        )
-        self.logger.debug(
-            f"Backed up the config ([{self.config_path}] to [{self.backup_directory_path}])"
-        )
-
     def _config_theme(self, config_file: TextIO) -> None:
         _ = config_file.write("\n")
         _ = config_file.write(f'theme "{self.theme}"\n')
@@ -62,7 +43,6 @@ class ZellijConfigData(ConfigurationData):
         _ = config_file.write(f'default_layout "{self.default_layout}"\n')
 
     def _config_auto_attach(self, config_file: TextIO) -> None:
-        self.logger.info(self.auto_attach_to_session)
         if len(self.auto_attach_to_session) != 0:
             _ = config_file.write("\n")
             _ = config_file.writelines(

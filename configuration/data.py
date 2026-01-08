@@ -3,7 +3,8 @@ import logging
 import os
 from pathlib import PosixPath
 from pprint import pformat
-from typing import Any, Self, override
+import shutil
+from typing import Any, ClassVar, Self, override
 from pydantic import BaseModel, ConfigDict, Field, SkipValidation
 
 import warnings
@@ -18,6 +19,9 @@ class ConfigurationData(BaseModel):
     Holds the data of the configuration
     """
 
+    CONFIG_NAME: ClassVar[str] = ""
+    CONFIG_FILE_NAME: ClassVar[str] = ""
+
     model_config = ConfigDict(use_attribute_docstrings=True)
     backup_directory_path: PosixPath = Field(
         default_factory=lambda: PosixPath(os.getenv("HOME", "~"), ".local", "backups")
@@ -27,8 +31,21 @@ class ConfigurationData(BaseModel):
     descriptions: SkipValidation[Self] = {}  # pyright: ignore[reportAssignmentType]
 
     @property
+    def resources_path(self) -> PosixPath:
+        return PosixPath(
+            os.getcwd(), "apps", type(self).CONFIG_NAME, "resources"
+        ).resolve()
+
+    @property
+    def home_path(self):
+        home_path = os.getenv("HOME")
+        if home_path is None:
+            home_path = "~"
+        return home_path
+
+    @property
     def config_path(self) -> PosixPath:
-        raise NotImplementedError
+        return PosixPath(self.home_path, type(self).CONFIG_FILE_NAME)
 
     @override
     def model_post_init(self, context: Any, /) -> None:
@@ -68,7 +85,27 @@ class ConfigurationData(BaseModel):
         raise NotImplementedError
 
     def _backup_config(self) -> None:
-        raise NotImplementedError
+        self.backup_directory_path.mkdir(parents=True, exist_ok=True)
+
+        target_backup_directory_path = PosixPath(
+            self.backup_directory_path, type(self).CONFIG_NAME
+        )
+
+        self.logger.debug(
+            "backup path: %s, config_path: %s",
+            target_backup_directory_path,
+            self.config_path,
+        )
+
+        target_backup_directory_path.mkdir(parents=True, exist_ok=True)
+
+        _ = shutil.copy(
+            self.config_path,
+            target_backup_directory_path,
+        )
+        self.logger.debug(
+            f"Backed up the config ([{self.config_path}] to [{self.backup_directory_path}])"
+        )
 
     def config(self) -> bool:
         self.logger.debug("Configuration: %s", pformat(dict(self)))
