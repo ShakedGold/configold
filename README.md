@@ -167,7 +167,7 @@ You can share these scripts with friends to create your own library and default 
 
 # Building
 ```bash
-python -m venv venv
+python3.13 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 ```
