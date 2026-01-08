@@ -26,13 +26,13 @@ class ZshConfigData(ConfigurationData):
             l="ls -lah",
             la="ls -lAh",
             ll="ls -l",
-            ls=BinaryRequirement("eza --icons=always", ["eza"]),
+            ls=BinaryRequirement("eza --icons=always", ["eza"], must_have=False),
             md="mkdir -p",
-            vim=BinaryRequirement("nvim", ["nvim"]),
+            vim=BinaryRequirement("nvim", ["nvim"], must_have=False),
             z="$EDITOR $HOME/.zshrc",
-            zj=BinaryRequirement("zellij", ["zellij"]),
+            zj=BinaryRequirement("zellij", ["zellij"], must_have=False),
             x=". $HOME/.zshrc",
-            cat=BinaryRequirement("bat", ["bat"]),
+            cat=BinaryRequirement("bat", ["bat"], must_have=False),
             g="git",
         )
     )
@@ -51,7 +51,7 @@ class ZshConfigData(ConfigurationData):
     "Like the aliases but at the end of a command instead of at the start"
 
     exports: dict[str, str | BinaryRequirement[str]] = Field(
-        default=dict(EDITOR="`which nvim`")
+        default=dict(EDITOR=BinaryRequirement("`which nvim`", ["nvim"]))
     )
     "Exported variables that can be used anywhere (example: echo $VARIABLE_NAME)"
 
